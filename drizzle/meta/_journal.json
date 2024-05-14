@@ -1,12 +1,12 @@
 {
-  "version": "5",
-  "dialect": "pg",
+  "version": "6",
+  "dialect": "postgresql",
   "entries": [
     {
       "idx": 0,
-      "version": "5",
-      "when": 1715125027390,
-      "tag": "0000_military_siren",
+      "version": "6",
+      "when": 1715729886991,
+      "tag": "0000_graceful_doomsday",
       "breakpoints": true
     }
   ]

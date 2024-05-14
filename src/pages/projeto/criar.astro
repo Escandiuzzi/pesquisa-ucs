@@ -1,25 +1,25 @@
 ---
 import { db } from "../../db";
-import { researchers } from "../../db/schema";
+import { projects } from "../../db/schema";
 
 let message: string = "";
 if (Astro.request.method === "POST") {
   try {
     const formData = await Astro.request.formData();
 
-    await db.insert(researchers).values({
-      name: formData.get("name") as string,
-      areas: formData.get("area") as string,
-      mainArea: formData.get("main_area") as string,
-      university: formData.get("university") as string,
-      dateOfBirth: formData.get("dob") as string,
-      contactInfo: formData.get("contact_info") as string,
-      picture: formData.get("photo_url") as string,
+    await db.insert(projects).values({
+      title: formData.get("title") as string,
+      startDate: formData.get("startDate") as string,
+      endDate: formData.get("endDate") as string,
+      collaborators: formData.get("collaborators") as string,
+      description: formData.get("description") as string,
+      results: formData.get("results") as string,
+      status: Number(formData.get("status") as string),
     });
 
-    message = "Pesquisador criado com sucesso!";
+    message = "Projeto criado com sucesso!";
   } catch (error) {
-    message = "Erro ao criar pesquisador!!!";
+    message = "Erro ao criar projeto!!!";
   }
 }
 ---
@@ -29,12 +29,12 @@ if (Astro.request.method === "POST") {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Criar pesquisador</title>
+    <title>Criar Projeto</title>
   </head>
   <body class="bg-gray-100">
     {message && <h1 class="text-3xl font-bold mb-4">{message}</h1>}
     <div class="container mx-auto p-8">
-      <h1 class="text-3xl font-bold mb-4">Criar pesquisador</h1>
+      <h1 class="text-3xl font-bold mb-4">Criar Projeto</h1>
       <form
         action=""
         method="post"
@@ -42,80 +42,92 @@ if (Astro.request.method === "POST") {
         class="max-w-lg mx-auto"
       >
         <div class="mb-4">
-          <label for="name" class="block text-gray-700 font-bold mb-2"
-            >Nome</label
+          <label for="title" class="block text-gray-700 font-bold mb-2"
+            >Título</label
           >
           <input
             type="text"
-            id="name"
-            name="name"
+            id="title"
+            name="title"
             class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-1"
           />
         </div>
-        <div class="mb-4">
-          <label for="photo_url" class="block text-gray-700 font-bold mb-2"
-            >Foto de perfil</label
-          >
-          <input
-            type="url"
-            id="photo_url"
-            name="photo_url"
-            class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-1"
-          />
-        </div>
-        <div class="mb-4">
-          <label for="university" class="block text-gray-700 font-bold mb-2"
-            >Universidade</label
-          >
-          <input
-            type="text"
-            id="university"
-            name="university"
-            class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-1"
-          />
-        </div>
-        <div class="mb-4">
-          <label for="area" class="block text-gray-700 font-bold mb-2"
-            >Áreas de Pesquisa</label
-          >
-          <input
-            type="text"
-            id="area"
-            name="area"
-            class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-1"
-          />
-        </div>
-        <div class="mb-4">
-          <label for="main_area" class="block text-gray-700 font-bold mb-2"
-            >Área Principal</label
-          >
-          <input
-            type="text"
-            id="main_area"
-            name="main_area"
-            class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-1"
-          />
-        </div>
+
         <div class="mb-4">
           <label for="dob" class="block text-gray-700 font-bold mb-2"
-            >Data de Nascimento</label
+            >Data de Início</label
           >
           <input
             type="date"
-            id="dob"
-            name="dob"
+            id="startDate"
+            name="startDate"
             class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-1"
           />
         </div>
+
         <div class="mb-4">
-          <label for="contact_info" class="block text-gray-700 font-bold mb-2"
-            >Informações de contato</label
+          <label for="endDate" class="block text-gray-700 font-bold mb-2"
+            >Data de Término</label
           >
-          <textarea
-            id="contact_info"
-            name="contact_info"
+          <input
+            type="date"
+            id="endDate"
+            name="endDate"
             class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-1"
-          ></textarea>
+          />
+        </div>
+
+        <div class="mb-4">
+          <label for="university" class="block text-gray-700 font-bold mb-2"
+            >Colaboradores</label
+          >
+          <input
+            type="text"
+            id="collaborators"
+            name="collaborators"
+            class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-1"
+          />
+        </div>
+
+        <div class="mb-4">
+          <label for="university" class="block text-gray-700 font-bold mb-2"
+            >Descrição</label
+          >
+          <input
+            type="text"
+            id="description"
+            name="description"
+            class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-1"
+          />
+        </div>
+
+        <div class="mb-4">
+          <label for="university" class="block text-gray-700 font-bold mb-2"
+            >Resultados</label
+          >
+          <input
+            type="text"
+            id="results"
+            name="results"
+            class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-1"
+          />
+        </div>
+
+        <div class="mb-4">
+          <label for="university" class="block text-gray-700 font-bold mb-2"
+            >Situação</label
+          >
+
+          <input
+            type="number"
+            id="status"
+            name="status"
+            class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-1"
+            min="0"
+            max="3"
+            step="1"
+            value="0"
+          />
         </div>
 
         <button

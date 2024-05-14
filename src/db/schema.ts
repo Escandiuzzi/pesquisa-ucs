@@ -4,6 +4,7 @@ import {
   uniqueIndex,
   varchar,
   date,
+  integer
 } from "drizzle-orm/pg-core";
 
 export const researchers = pgTable(
@@ -21,6 +22,25 @@ export const researchers = pgTable(
   (researchers) => {
     return {
       nameIndex: uniqueIndex("name_idx").on(researchers.name),
+    };
+  }
+);
+
+export const projects = pgTable(
+  "projects",
+  {
+    id: serial("id").primaryKey(),
+    title: varchar("title", { length: 256 }),
+    startDate: date("start_date"),
+    endDate: date("end_date"),
+    collaborators: varchar("collaborators", { length: 256 }),
+    description: varchar("description"),
+    results: varchar("results"),
+    status: integer("status"),
+  },
+  (projects) => {
+    return {
+      titleIndex: uniqueIndex("title_idx").on(projects.title),
     };
   }
 );
