@@ -1,25 +1,24 @@
 ---
 import { db } from "../../db";
-import { projects } from "../../db/schema";
+import { productions } from "../../db/schema";
 
 let message: string = "";
 if (Astro.request.method === "POST") {
   try {
     const formData = await Astro.request.formData();
 
-    await db.insert(projects).values({
+    await db.insert(productions).values({
       title: formData.get("title") as string,
-      startDate: formData.get("startDate") as string,
-      endDate: formData.get("endDate") as string,
+      pubDate: formData.get("pubDate") as string,
+      type: formData.get("type") as string,
+      area: formData.get("area") as string,
       collaborators: formData.get("collaborators") as string,
-      description: formData.get("description") as string,
-      results: formData.get("results") as string,
-      status: Number(formData.get("status") as string),
+      links: formData.get("links") as string,
     });
 
-    message = "Projeto criado com sucesso!";
+    message = "Produção criado com sucesso!";
   } catch (error) {
-    message = "Erro ao criar projeto!!!";
+    message = "Erro ao criar produção!!!";
   }
 }
 ---
@@ -29,12 +28,12 @@ if (Astro.request.method === "POST") {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Criar Projeto</title>
+    <title>Criar Produção</title>
   </head>
   <body class="bg-gray-100">
     {message && <h1 class="text-3xl font-bold mb-4">{message}</h1>}
     <div class="container mx-auto p-8">
-      <h1 class="text-3xl font-bold mb-4">Criar Projeto</h1>
+      <h1 class="text-3xl font-bold mb-4">Criar Produção</h1>
       <form
         action=""
         method="post"
@@ -54,28 +53,41 @@ if (Astro.request.method === "POST") {
         </div>
 
         <div class="mb-4">
-          <label for="startDate" class="block text-gray-700 font-bold mb-2"
-            >Data de Início</label
+          <label for="pubDate" class="block text-gray-700 font-bold mb-2"
+            >Data de Publicação</label
           >
           <input
             type="date"
-            id="startDate"
-            name="startDate"
+            id="pubDate"
+            name="pubDate"
             class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-1"
           />
         </div>
 
         <div class="mb-4">
-          <label for="endDate" class="block text-gray-700 font-bold mb-2"
-            >Data de Término</label
+          <label for="type" class="block text-gray-700 font-bold mb-2"
+            >Tipo</label
           >
           <input
-            type="date"
-            id="endDate"
-            name="endDate"
+            type="text"
+            id="type"
+            name="type"
             class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-1"
           />
         </div>
+
+        <div class="mb-4">
+          <label for="area" class="block text-gray-700 font-bold mb-2"
+            >Área</label
+          >
+          <input
+            type="text"
+            id="area"
+            name="area"
+            class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-1"
+          />
+        </div>
+
 
         <div class="mb-4">
           <label for="collaborators" class="block text-gray-700 font-bold mb-2"
@@ -90,43 +102,14 @@ if (Astro.request.method === "POST") {
         </div>
 
         <div class="mb-4">
-          <label for="description" class="block text-gray-700 font-bold mb-2"
-            >Descrição</label
+          <label for="links" class="block text-gray-700 font-bold mb-2"
+            >Links</label
           >
           <input
             type="text"
-            id="description"
-            name="description"
+            id="links"
+            name="links"
             class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-1"
-          />
-        </div>
-
-        <div class="mb-4">
-          <label for="results" class="block text-gray-700 font-bold mb-2"
-            >Resultados</label
-          >
-          <input
-            type="text"
-            id="results"
-            name="results"
-            class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-1"
-          />
-        </div>
-
-        <div class="mb-4">
-          <label for="status" class="block text-gray-700 font-bold mb-2"
-            >Situação</label
-          >
-
-          <input
-            type="number"
-            id="status"
-            name="status"
-            class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-1"
-            min="0"
-            max="3"
-            step="1"
-            value="0"
           />
         </div>
 
