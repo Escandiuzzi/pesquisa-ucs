@@ -7,15 +7,15 @@ if (Astro.request.method === "POST") {
   try {
     const formData = await Astro.request.formData();
 
-    await db.insert(projects).values({
-      title: formData.get("title") as string,
-      startDate: formData.get("startDate") as string,
-      endDate: formData.get("endDate") as string,
-      collaborators: formData.get("collaborators") as string,
-      description: formData.get("description") as string,
-      results: formData.get("results") as string,
-      status: Number(formData.get("status") as string),
-    });
+    // await db.insert(projects).values({
+    //   title: formData.get("title") as string,
+    //   startDate: formData.get("startDate") as string,
+    //   endDate: formData.get("endDate") as string,
+    //   collaborators: formData.get("collaborators") as string,
+    //   description: formData.get("description") as string,
+    //   results: formData.get("results") as string,
+    //   status: Number(formData.get("status") as string),
+    // });
 
     message = "Projeto criado com sucesso!";
   } catch (error) {

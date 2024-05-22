@@ -7,15 +7,15 @@ if (Astro.request.method === "POST") {
   try {
     const formData = await Astro.request.formData();
 
-    await db.insert(researchers).values({
-      name: formData.get("name") as string,
-      areas: formData.get("area") as string,
-      mainArea: formData.get("main_area") as string,
-      university: formData.get("university") as string,
-      dateOfBirth: formData.get("dob") as string,
-      contactInfo: formData.get("contact_info") as string,
-      picture: formData.get("photo_url") as string,
-    });
+    // await db.insert(researchers).values({
+    //   name: formData.get("name") as string,
+    //   areas: formData.get("area") as string,
+    //   mainArea: formData.get("main_area") as string,
+    //   university: formData.get("university") as string,
+    //   dateOfBirth: formData.get("dob") as string,
+    //   contactInfo: formData.get("contact_info") as string,
+    //   picture: formData.get("photo_url") as string,
+    // });
 
     message = "Pesquisador criado com sucesso!";
   } catch (error) {

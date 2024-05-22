@@ -7,14 +7,14 @@ if (Astro.request.method === "POST") {
   try {
     const formData = await Astro.request.formData();
 
-    await db.insert(productions).values({
-      title: formData.get("title") as string,
-      pubDate: formData.get("pubDate") as string,
-      type: formData.get("type") as string,
-      area: formData.get("area") as string,
-      collaborators: formData.get("collaborators") as string,
-      links: formData.get("links") as string,
-    });
+    // await db.insert(productions).values({
+    //   title: formData.get("title") as string,
+    //   pubDate: formData.get("pubDate") as string,
+    //   type: formData.get("type") as string,
+    //   area: formData.get("area") as string,
+    //   collaborators: formData.get("collaborators") as string,
+    //   links: formData.get("links") as string,
+    // });
 
     message = "Produção criado com sucesso!";
   } catch (error) {
