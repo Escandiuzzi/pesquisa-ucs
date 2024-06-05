@@ -1,0 +1,22 @@
+---
+export interface Props {
+  name: string;
+  label: string;
+  required?: boolean;
+}
+
+const { name, label, required } = Astro.props;
+---
+
+<div>
+  <label for={name} class="block text-black mb-1"
+    >{label}{
+      required && (
+        <span class="text-red-500" title="Esse campo é obrigatório.">
+          *
+        </span>
+      )
+    }</label
+  >
+  <slot />
+</div>

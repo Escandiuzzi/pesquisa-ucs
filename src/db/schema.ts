@@ -29,6 +29,7 @@ export const areasRelations = relations(areas, ({ one, many }) => ({
     references: [areas.id],
   }),
   researchers: many(researchersToAreas),
+  productions: many(productions),
 }));
 
 // Researchers.
@@ -94,7 +95,7 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
     references: [researchers.id],
   }),
   researchers: many(researchersToProjects),
-  productions: many(projects),
+  productions: many(productions),
 }));
 
 // Researchers to projects.
@@ -123,15 +124,20 @@ export const productions = sqliteTable("productions", {
   projectId: integer("project_id").references(() => projects.id),
   title: text("title"),
   pubDate: text("pub_date"),
-  type: text("type"),
-  area: text("area"),
+  typeId: integer("type"),
+  areaId: integer("area_id").references(() => areas.id),
   links: text("links"),
 });
 
 export const productionsRelations = relations(productions, ({ one, many }) => ({
-  projects: one(projects, {
+  project: one(projects, {
     fields: [productions.projectId],
     references: [projects.id],
+    relationName: "projectsToProductions",
+  }),
+  area: one(areas, {
+    fields: [productions.areaId],
+    references: [areas.id],
   }),
   researchers: many(researchersToProductions),
 }));

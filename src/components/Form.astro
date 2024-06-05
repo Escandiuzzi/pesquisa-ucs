@@ -1,0 +1,28 @@
+---
+import type { HTMLAttributes } from "astro/types";
+
+export interface Props extends HTMLAttributes<"form"> {}
+
+const { class: className, ...props } = Astro.props;
+---
+
+<style>
+  form.htmx-request {
+    @apply animate-pulse opacity-75 cursor-progress;
+  }
+
+  form.htmx-request * {
+    @apply pointer-events-none;
+  }
+</style>
+
+<form
+  enctype="multipart/form-data"
+  class:list={["max-w-lg mx-auto space-y-4", className]}
+  hx-target="#form_message"
+  hx-swap="innerHTML"
+  {...props}
+>
+  <slot />
+</form>
+<div id="form_message"></div>

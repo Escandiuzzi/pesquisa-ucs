@@ -9,22 +9,25 @@
     "preview": "astro preview",
     "astro": "astro",
     "push": "drizzle-kit push",
-    "test": "vitest"
+    "test": "vitest",
+    "seed": "tsx ./src/seed/seedProd.ts",
+    "studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@astrojs/check": "^0.7.0",
     "@astrojs/node": "^8.2.5",
     "@astrojs/tailwind": "^5.1.0",
+    "@types/bcryptjs": "^2.4.6",
     "astro": "^4.8.6",
-    "bcrypt": "^5.1.1",
+    "bcryptjs": "^2.4.3",
     "better-sqlite3": "^10.0.0",
     "drizzle-orm": "^0.30.10",
     "postgres": "^3.4.4",
     "tailwindcss": "^3.4.3",
+    "tsx": "^4.11.2",
     "typescript": "^5.4.5"
   },
   "devDependencies": {
-    "@types/bcrypt": "^5.0.2",
     "@types/better-sqlite3": "^7.6.10",
     "drizzle-kit": "^0.21.2",
     "vitest": "^1.6.0"

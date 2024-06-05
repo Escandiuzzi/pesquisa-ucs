@@ -1,0 +1,19 @@
+---
+import type { HTMLAttributes } from "astro/types";
+
+export interface Props extends HTMLAttributes<"select"> {}
+
+const { class: className, name, id, ...props } = Astro.props;
+---
+
+<select
+  name={name}
+  id={id || name}
+  class:list={[
+    "w-full bg-gray-100 shadow-inner rounded-md focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-1",
+    className,
+  ]}
+  {...props}
+>
+  <slot />
+</select>

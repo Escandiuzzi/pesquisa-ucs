@@ -1,0 +1,111 @@
+---
+import Button from "../../components/Button.astro";
+import Container from "../../components/Container.astro";
+import Form from "../../components/Form.astro";
+import Input from "../../components/Input.astro";
+import Labelled from "../../components/Labelled.astro";
+import Link from "../../components/Link.astro";
+import Select from "../../components/Select.astro";
+import Textarea from "../../components/Textarea.astro";
+import { db } from "../../db";
+import { universities } from "../../db/schema";
+import Default from "../../layouts/Default.astro";
+import { getAreasFlat } from "../../lib/area";
+
+const universityEntries = await db.select().from(universities);
+const areas = await getAreasFlat();
+---
+
+<style>
+  form.htmx-request {
+    @apply animate-pulse opacity-75 cursor-progress;
+  }
+
+  form.htmx-request * {
+    @apply pointer-events-none;
+  }
+</style>
+
+<Default title="Criar pesquisador">
+  <main>
+    <Container class="py-6">
+      <Link href="/pesquisadores" class="text-blue-600">&lt; Voltar</Link>
+      <h2 class="text-2xl font-bold">Criar pesquisador</h2>
+      <Form hx-post="/pesquisadores/api">
+        <Labelled name="email" label="Email" required>
+          <Input type="email" name="email" required />
+        </Labelled>
+        <Labelled name="password" label="Senha" required>
+          <Input type="password" name="password" required />
+        </Labelled>
+        <Labelled name="password_confirm" label="Confirmar senha" required>
+          <Input type="password" name="password_confirm" required />
+        </Labelled>
+        <hr />
+        <Labelled name="name" label="Nome" required>
+          <Input type="text" name="name" required />
+        </Labelled>
+        <Labelled name="picture" label="Foto de perfil">
+          <Input type="file" name="picture" accept="image/jpeg,image/png" />
+        </Labelled>
+        <Labelled name="university" label="Universidade" required>
+          <Select name="university" required>
+            <option value="">Selecione a universidade</option>
+            {
+              universityEntries.map((university) => (
+                <option value={university.id}>{university.name}</option>
+              ))
+            }
+          </Select>
+        </Labelled>
+        <Labelled name="main_area" label="Área de pesquisa principal" required>
+          <Select name="main_area" required>
+            <option value="">Selecione a área principal</option>
+            {areas.map((area) => <option value={area.id}>{area.name}</option>)}
+          </Select>
+        </Labelled>
+        <Labelled name="areas[]" label="Áreas de Pesquisa" required>
+          <template id="area_template">
+            <div class="flex gap-2 group/control">
+              <Select name="areas[]" required>
+                <option value="">Selecione uma área</option>
+                {
+                  areas.map((area) => (
+                    <option value={area.id}>{area.name}</option>
+                  ))
+                }
+              </Select>
+              <button
+                class="group"
+                type="button"
+                onclick="this.closest('div').remove();"
+              >
+                <Button variant="destructive" size="sm">-</Button>
+              </button>
+            </div>
+          </template>
+          <div id="area_list" class="space-y-2"></div>
+          <button
+            class="group mt-2 w-full"
+            type="button"
+            onclick="
+            const areaList = document.getElementById('area_list');
+            const select = document.getElementById('area_template').content.cloneNode(true).querySelector('div');
+            areaList.appendChild(select);
+          "
+          >
+            <Button variant="outline" size="sm">+ Adicionar área</Button>
+          </button>
+        </Labelled>
+        <Labelled name="dob" label="Data de Nascimento" required>
+          <Input type="date" name="dob" required />
+        </Labelled>
+        <Labelled name="contact_info" label="Informações de contato">
+          <Textarea rows="8" name="contact_info" />
+        </Labelled>
+
+        <button type="submit" class="group"><Button>Enviar</Button></button>
+      </Form>
+    </Container>
+  </main>
+</Default>

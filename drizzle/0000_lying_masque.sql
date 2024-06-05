@@ -10,10 +10,11 @@ CREATE TABLE `productions` (
 	`project_id` integer,
 	`title` text,
 	`pub_date` text,
-	`type` text,
-	`area` text,
+	`type` integer,
+	`area_id` integer,
 	`links` text,
-	FOREIGN KEY (`project_id`) REFERENCES `projects`(`id`) ON UPDATE no action ON DELETE no action
+	FOREIGN KEY (`project_id`) REFERENCES `projects`(`id`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`area_id`) REFERENCES `areas`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
 CREATE TABLE `projects` (

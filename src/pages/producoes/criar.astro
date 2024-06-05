@@ -1,0 +1,111 @@
+---
+import Button from "../../components/Button.astro";
+import Container from "../../components/Container.astro";
+import Form from "../../components/Form.astro";
+import Input from "../../components/Input.astro";
+import Labelled from "../../components/Labelled.astro";
+import Link from "../../components/Link.astro";
+import Select from "../../components/Select.astro";
+import Textarea from "../../components/Textarea.astro";
+import { db } from "../../db";
+import { projects, researchers } from "../../db/schema";
+import Default from "../../layouts/Default.astro";
+import { getAreasFlat } from "../../lib/area";
+
+const researcherEntries = await db.select().from(researchers);
+const projectEntries = await db.select().from(projects);
+const areas = await getAreasFlat();
+---
+
+<style>
+  form.htmx-request {
+    @apply animate-pulse opacity-75 cursor-progress;
+  }
+
+  form.htmx-request * {
+    @apply pointer-events-none;
+  }
+</style>
+
+<Default title="Criar produção">
+  <main>
+    <Container class="py-6">
+      <Link href="/producoes" class="text-blue-600">&lt; Voltar</Link>
+      <h2 class="text-2xl font-bold">Criar produção</h2>
+      <Form hx-post="/producoes/api">
+        <Labelled name="project" label="Projeto" required>
+          <Select name="project" required>
+            <option value=""
+              >Selecione o projeto a que essa produção pertence</option
+            >
+            {
+              projectEntries.map((project) => (
+                <option value={project.id}>{project.title}</option>
+              ))
+            }
+          </Select>
+        </Labelled>
+        <hr />
+        <Labelled name="title" label="Título" required>
+          <Input type="text" name="title" required />
+        </Labelled>
+        <Labelled name="pub_date" label="Data de Publicação" required>
+          <Input type="date" name="pub_date" required />
+        </Labelled>
+        <Labelled name="type" label="Tipo" required>
+          <Select name="type" required>
+            <option value="">Selecione o tipo</option>
+            <option value="1">Artigo</option>
+            <option value="2">Livro</option>
+            <option value="3">Patente</option>
+            <option value="4">Apresentação de trabalho</option>
+          </Select>
+        </Labelled>
+        <Labelled name="area" label="Área de pesquisa" required>
+          <Select name="area" required>
+            <option value="">Selecione a área</option>
+            {areas.map((area) => <option value={area.id}>{area.name}</option>)}
+          </Select>
+        </Labelled>
+        <Labelled name="collaborators[]" label="Colaboradores" required>
+          <template id="collab_template">
+            <div class="flex gap-2 group/control">
+              <Select name="collaborators[]" required>
+                <option value="">Selecione um pesquisador</option>
+                {
+                  researcherEntries.map((researcher) => (
+                    <option value={researcher.id}>{researcher.name}</option>
+                  ))
+                }
+              </Select>
+              <button
+                class="group"
+                type="button"
+                onclick="this.closest('div').remove();"
+              >
+                <Button variant="destructive" size="sm">-</Button>
+              </button>
+            </div>
+          </template>
+          <div id="collab_list" class="space-y-2"></div>
+          <button
+            class="group mt-2 w-full"
+            type="button"
+            onclick="
+            const collabList = document.getElementById('collab_list');
+            const select = document.getElementById('collab_template').content.cloneNode(true).querySelector('div');
+            collabList.appendChild(select);
+          "
+          >
+            <Button variant="outline" size="sm">+ Adicionar pesquisador</Button>
+          </button>
+        </Labelled>
+        <Labelled name="links" label="Links">
+          <Textarea rows="8" name="links" />
+        </Labelled>
+
+        <button type="submit" class="group"><Button>Enviar</Button></button>
+      </Form>
+    </Container>
+  </main>
+</Default>

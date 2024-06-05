@@ -1,10 +1,9 @@
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
-import { db } from "../db";
-import { researchers } from "../db/schema";
-import bcrypt from "bcrypt";
+import { researchers, researchersToAreas } from "../db/schema";
+import bcrypt from "bcryptjs";
 
 export async function createResearcher(
-  db: BetterSQLite3Database,
+  db: BetterSQLite3Database<any>,
   {
     email,
     password,
@@ -14,6 +13,7 @@ export async function createResearcher(
     idMainArea,
     dateOfBirth,
     contactInfo,
+    pictureUrl,
   }: {
     email: string;
     password: string;
@@ -23,20 +23,38 @@ export async function createResearcher(
     idMainArea: number;
     dateOfBirth: Date;
     contactInfo: string;
+    pictureUrl?: string;
   }
 ) {
-  return await db
-    .insert(researchers)
-    .values([
-      {
-        email,
-        name,
-        passwordHash: await bcrypt.hash(password, 10),
-        contactInfo,
-        dateOfBirth: dateOfBirth.toISOString(),
-        mainAreaId: idMainArea,
-        universityId: idUniversity,
-      },
-    ])
-    .returning({ id: researchers.id });
+  const researcher = (
+    await db
+      .insert(researchers)
+      .values([
+        {
+          email,
+          name,
+          passwordHash: await bcrypt.hash(password, 10),
+          contactInfo,
+          dateOfBirth:
+            dateOfBirth.getFullYear() +
+            "-" +
+            (dateOfBirth.getMonth() + 1) +
+            "-" +
+            dateOfBirth.getDate(),
+          mainAreaId: idMainArea,
+          universityId: idUniversity,
+          picture: pictureUrl,
+        },
+      ])
+      .returning({ id: researchers.id })
+  )[0];
+
+  await db.insert(researchersToAreas).values(
+    idAreas.map((idArea) => ({
+      researcherId: researcher.id,
+      areaId: idArea,
+    }))
+  );
+
+  return researcher;
 }

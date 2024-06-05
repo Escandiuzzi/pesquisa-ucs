@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "4ea1fe11-c3b3-4033-b38c-de3cebafcd86",
+  "id": "54a7af94-a490-4b40-aba6-a75dde0d68f3",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "areas": {
@@ -89,14 +89,14 @@
         },
         "type": {
           "name": "type",
-          "type": "text",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
-        "area": {
-          "name": "area",
-          "type": "text",
+        "area_id": {
+          "name": "area_id",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -117,6 +117,19 @@
           "tableTo": "projects",
           "columnsFrom": [
             "project_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "productions_area_id_areas_id_fk": {
+          "name": "productions_area_id_areas_id_fk",
+          "tableFrom": "productions",
+          "tableTo": "areas",
+          "columnsFrom": [
+            "area_id"
           ],
           "columnsTo": [
             "id"

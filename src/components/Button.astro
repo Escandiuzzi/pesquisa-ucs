@@ -1,0 +1,33 @@
+---
+import type { HTMLAttributes } from "astro/types";
+
+export interface Props extends HTMLAttributes<"div"> {
+  variant?: "primary" | "destructive" | "outline";
+  size?: "sm" | "md" | "lg";
+}
+
+const {
+  class: className,
+  variant = "primary",
+  size = "md",
+  ...props
+} = Astro.props;
+---
+
+<div
+  class:list={[
+    "px-4 text-center justify-center rounded-md shadow-md group-active:opacity-70 flex gap-2 font-bold",
+    size === "sm" && "py-1",
+    size === "md" && "py-2",
+    variant === "primary" &&
+      "bg-gradient-to-b from-sky-500 to-sky-600 text-white group-hover:from-sky-400 group-hover:to-sky-500",
+    variant === "destructive" &&
+      "bg-gradient-to-b from-red-500 to-red-600 text-white group-hover:from-red-400 group-hover:to-red-500",
+    variant === "outline" &&
+      "bg-white text-sky-500 border-2 border-sky-500 group-hover:bg-sky-100 group-hover:border-sky-400",
+    className,
+  ]}
+  {...props}
+>
+  <slot />
+</div>
