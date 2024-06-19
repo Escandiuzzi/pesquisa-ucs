@@ -10,7 +10,7 @@ import Textarea from "../../components/Textarea.astro";
 import { db } from "../../db";
 import { projects, researchers } from "../../db/schema";
 import Default from "../../layouts/Default.astro";
-import { getAreasFlat } from "../../lib/area";
+import { getAreasFlat } from "../../models/area";
 
 const researcherEntries = await db.select().from(researchers);
 const projectEntries = await db.select().from(projects);

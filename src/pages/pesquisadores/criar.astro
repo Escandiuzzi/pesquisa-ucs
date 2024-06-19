@@ -10,7 +10,7 @@ import Textarea from "../../components/Textarea.astro";
 import { db } from "../../db";
 import { universities } from "../../db/schema";
 import Default from "../../layouts/Default.astro";
-import { getAreasFlat } from "../../lib/area";
+import { getAreasFlat } from "../../models/area";
 
 const universityEntries = await db.select().from(universities);
 const areas = await getAreasFlat();
