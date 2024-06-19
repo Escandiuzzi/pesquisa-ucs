@@ -86,7 +86,6 @@ export const projects = sqliteTable("projects", {
   startDate: text("start_date"),
   endDate: text("end_date"),
   description: text("description"),
-  status: integer("status"),
 });
 
 export const projectsRelations = relations(projects, ({ one, many }) => ({

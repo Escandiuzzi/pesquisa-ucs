@@ -53,7 +53,6 @@ export async function seed(db: BetterSQLite3Database<any>) {
       description: "Projeto de pesquisa em biotecnologia.",
       endDate: "2022-12-31",
       startDate: "2022-01-01",
-      status: 0,
       title: "Projeto de Biotecnologia",
     },
   ]);
