@@ -81,7 +81,7 @@ export const researchersToAreasRelations = relations(
 // Projects.
 export const projects = sqliteTable("projects", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  creator: integer("creator_id").references(() => researchers.id),
+  creatorId: integer("creator_id").references(() => researchers.id),
   title: text("title"),
   startDate: text("start_date"),
   endDate: text("end_date"),
@@ -90,7 +90,7 @@ export const projects = sqliteTable("projects", {
 
 export const projectsRelations = relations(projects, ({ one, many }) => ({
   creator: one(researchers, {
-    fields: [projects.creator],
+    fields: [projects.creatorId],
     references: [researchers.id],
   }),
   researchers: many(researchersToProjects),

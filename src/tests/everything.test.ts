@@ -49,7 +49,14 @@ test("criar uma produção", async () => {
 });
 
 test("criar um projeto", async () => {
-  let result = await createProject(db, {});
+  let result = await createProject(db, {
+    creatorId: 1,
+    title: "Teste",
+    description: "Teste",
+    startDate: new Date(),
+    endDate: new Date(),
+    idCollaborators: [1],
+  });
 
   console.log(result);
   expect(result).toStrictEqual({ id: 1 });
