@@ -49,7 +49,7 @@ export async function seed(db: BetterSQLite3Database<any>) {
   await db.insert(projects).values([
     {
       id: 0,
-      creator: 0,
+      creatorId: 0,
       description: "Projeto de pesquisa em biotecnologia.",
       endDate: "2022-12-31",
       startDate: "2022-01-01",
