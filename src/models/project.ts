@@ -13,10 +13,10 @@ export async function createProject(
   }: {
     creatorId: number;
     title: string;
-    description: string;
+    description?: string;
     startDate: Date;
-    endDate: Date;
-    idCollaborators: number[];
+    endDate?: Date;
+    idCollaborators?: number[];
   }
 ) {
   const project = (
@@ -33,23 +33,26 @@ export async function createProject(
             (startDate.getMonth() + 1) +
             "-" +
             startDate.getDate(),
-          endDate:
-            endDate.getFullYear() +
-            "-" +
-            (endDate.getMonth() + 1) +
-            "-" +
-            endDate.getDate(),
+          endDate: endDate
+            ? endDate.getFullYear() +
+              "-" +
+              (endDate.getMonth() + 1) +
+              "-" +
+              endDate.getDate()
+            : undefined,
         },
       ])
       .returning({ id: projects.id })
   )[0];
 
-  await db.insert(researchersToProjects).values(
-    idCollaborators.map((id) => ({
-      projectId: project.id,
-      researcherId: id,
-    }))
-  );
+  idCollaborators &&
+    idCollaborators.length > 0 &&
+    (await db.insert(researchersToProjects).values(
+      idCollaborators.map((id) => ({
+        projectId: project.id,
+        researcherId: id,
+      }))
+    ));
 
   return project;
 }

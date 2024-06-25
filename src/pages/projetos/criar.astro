@@ -1,141 +1,95 @@
 ---
+import Button from "../../components/Button.astro";
+import Container from "../../components/Container.astro";
+import Form from "../../components/Form.astro";
+import Input from "../../components/Input.astro";
+import Labelled from "../../components/Labelled.astro";
+import Link from "../../components/Link.astro";
+import Select from "../../components/Select.astro";
+import Textarea from "../../components/Textarea.astro";
 import { db } from "../../db";
-import { projects } from "../../db/schema";
+import { projects, researchers } from "../../db/schema";
+import Default from "../../layouts/Default.astro";
+import { getAreasFlat } from "../../models/area";
 
-let message: string = "";
-if (Astro.request.method === "POST") {
-  try {
-    const formData = await Astro.request.formData();
-
-    // await db.insert(projects).values({
-    //   title: formData.get("title") as string,
-    //   startDate: formData.get("startDate") as string,
-    //   endDate: formData.get("endDate") as string,
-    //   collaborators: formData.get("collaborators") as string,
-    //   description: formData.get("description") as string,
-    //   results: formData.get("results") as string,
-    //   status: Number(formData.get("status") as string),
-    // });
-
-    message = "Projeto criado com sucesso!";
-  } catch (error) {
-    message = "Erro ao criar projeto!!!";
-  }
-}
+const researcherEntries = await db.select().from(researchers);
 ---
 
-<!doctype html>
-<html lang="pt">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Criar Projeto</title>
-  </head>
-  <body class="bg-gray-100">
-    {message && <h1 class="text-3xl font-bold mb-4">{message}</h1>}
-    <div class="container mx-auto p-8">
-      <h1 class="text-3xl font-bold mb-4">Criar Projeto</h1>
-      <form
-        action=""
-        method="post"
-        enctype="multipart/form-data"
-        class="max-w-lg mx-auto"
-      >
-        <div class="mb-4">
-          <label for="title" class="block text-gray-700 font-bold mb-2"
-            >Título</label
+<style>
+  form.htmx-request {
+    @apply animate-pulse opacity-75 cursor-progress;
+  }
+
+  form.htmx-request * {
+    @apply pointer-events-none;
+  }
+</style>
+
+<Default title="Criar projeto">
+  <main>
+    <Container class="py-6">
+      <Link href="/projetos" class="text-blue-600">&lt; Voltar</Link>
+      <h2 class="text-2xl font-bold">Criar projeto</h2>
+      <Form hx-post="/projetos/api">
+        <Labelled name="creator" label="Criador" required>
+          <Select name="creator[]" required>
+            <option value="">Selecione um pesquisador</option>
+            {
+              researcherEntries.map((researcher) => (
+                <option value={researcher.id}>{researcher.name}</option>
+              ))
+            }
+          </Select>
+        </Labelled>
+        <hr />
+        <Labelled name="title" label="Título" required>
+          <Input type="text" name="title" required />
+        </Labelled>
+        <Labelled name="start_date" label="Data de Início" required>
+          <Input type="date" name="start_date" required />
+        </Labelled>
+        <Labelled name="end_date" label="Data de Término">
+          <Input type="date" name="end_date" />
+        </Labelled>
+        <Labelled name="collaborators[]" label="Colaboradores">
+          <template id="collab_template">
+            <div class="flex gap-2 group/control">
+              <Select name="collaborators[]" required>
+                <option value="">Selecione um pesquisador</option>
+                {
+                  researcherEntries.map((researcher) => (
+                    <option value={researcher.id}>{researcher.name}</option>
+                  ))
+                }
+              </Select>
+              <button
+                class="group"
+                type="button"
+                onclick="this.closest('div').remove();"
+              >
+                <Button variant="destructive" size="sm">-</Button>
+              </button>
+            </div>
+          </template>
+          <div id="collab_list" class="space-y-2"></div>
+          <button
+            class="group mt-2 w-full"
+            type="button"
+            onclick="
+            const collabList = document.getElementById('collab_list');
+            const select = document.getElementById('collab_template').content.cloneNode(true).querySelector('div');
+            collabList.appendChild(select);
+          "
           >
-          <input
-            type="text"
-            id="title"
-            name="title"
-            class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-1"
-          />
-        </div>
+            <Button variant="outline" size="sm">+ Adicionar pesquisador</Button>
+          </button>
+        </Labelled>
+        <Labelled name="description" label="Descrição">
+          <Textarea rows="8" name="description" />
+        </Labelled>
 
-        <div class="mb-4">
-          <label for="startDate" class="block text-gray-700 font-bold mb-2"
-            >Data de Início</label
-          >
-          <input
-            type="date"
-            id="startDate"
-            name="startDate"
-            class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-1"
-          />
-        </div>
-
-        <div class="mb-4">
-          <label for="endDate" class="block text-gray-700 font-bold mb-2"
-            >Data de Término</label
-          >
-          <input
-            type="date"
-            id="endDate"
-            name="endDate"
-            class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-1"
-          />
-        </div>
-
-        <div class="mb-4">
-          <label for="collaborators" class="block text-gray-700 font-bold mb-2"
-            >Colaboradores</label
-          >
-          <input
-            type="text"
-            id="collaborators"
-            name="collaborators"
-            class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-1"
-          />
-        </div>
-
-        <div class="mb-4">
-          <label for="description" class="block text-gray-700 font-bold mb-2"
-            >Descrição</label
-          >
-          <input
-            type="text"
-            id="description"
-            name="description"
-            class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-1"
-          />
-        </div>
-
-        <div class="mb-4">
-          <label for="results" class="block text-gray-700 font-bold mb-2"
-            >Resultados</label
-          >
-          <input
-            type="text"
-            id="results"
-            name="results"
-            class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-1"
-          />
-        </div>
-
-        <div class="mb-4">
-          <label for="status" class="block text-gray-700 font-bold mb-2"
-            >Situação</label
-          >
-
-          <input
-            type="number"
-            id="status"
-            name="status"
-            class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-1"
-            min="0"
-            max="3"
-            step="1"
-            value="0"
-          />
-        </div>
-
-        <button
-          type="submit"
-          class="bg-indigo-500 text-white font-bold py-2 px-4 rounded-md hover:bg-indigo-600 focus:outline-none focus:bg-indigo-600"
-          >Enviar</button
-        >
-      </form>
-    </div>
-  </body>
-</html>
+        <button type="submit" class="group"><Button>Enviar</Button></button>
+      </Form>
+    </Container>
+  </main>
+</Default>

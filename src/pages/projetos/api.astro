@@ -1,0 +1,96 @@
+---
+import { db } from "../../db";
+import { createProject } from "../../models/project";
+
+export const partial = true;
+
+let response: { type: "message"; message: string; error: boolean } | undefined;
+let id = Math.random().toString(36).slice(2, 9);
+
+switch (Astro.request.method) {
+  case "POST":
+    const formData = await Astro.request.formData();
+
+    try {
+      await createProject(db, {
+        creatorId: Number(formData.get("creator") as string),
+        title: formData.get("title") as string,
+        description: formData.get("description") as string,
+        idCollaborators: formData.getAll("collaborators").map(Number),
+        startDate: new Date(formData.get("start_date") as string),
+        endDate: new Date(formData.get("end_date") as string),
+      });
+
+      response = {
+        type: "message",
+        message: "Projeto criado com sucesso",
+        error: false,
+      };
+    } catch (error) {
+      console.error(error);
+
+      response = {
+        type: "message",
+        message: "Erro ao criar projeto",
+        error: true,
+      };
+    }
+    break;
+
+  default:
+    response = {
+      type: "message",
+      message: "Método inválido.",
+      error: true,
+    };
+    break;
+}
+
+await new Promise((resolve) => setTimeout(resolve, 1000));
+---
+
+{" "}
+{
+  response?.type === "message" && (
+    <>
+      <div
+        id={"message_popup_" + id}
+        class:list={[
+          "fixed bottom-6 right-6 max-w-[400px] flex items-start gap-2 shadow-md rounded-md px-3 py-2 transition-transform duration-700 ease-[cubic-bezier(.28,1.62,.34,.82)]",
+          response.error
+            ? "bg-red-100 text-red-800"
+            : "bg-green-100 text-green-800",
+        ]}
+        style="transform: translate(0, 200%)"
+      >
+        {response.message}
+        <button class="font-bold">
+          {" "}
+          ×{" "}
+        </button>
+      </div>
+      <script is:inline define:vars={{messageId: "message_popup_" + id}}>
+        const message = document.getElementById(messageId);
+        message.querySelector("button").addEventListener("click", close);
+        let autoClose;
+
+        open();
+
+        function open() {
+          if (!message) return;
+          message.style.transform = "translate(0, 0)";
+          autoClose = setTimeout(close, 5000);
+        }
+
+        function close() {
+          if (!message) return;
+          clearTimeout(autoClose);
+          message.style.transform = "translate(0, 200%)";
+          setTimeout(() => {
+            message.remove();
+          }, 700);
+        }
+      </script>
+    </>
+  )
+}
