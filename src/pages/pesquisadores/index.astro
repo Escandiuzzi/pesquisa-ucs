@@ -2,6 +2,31 @@
 import Button from "../../components/Button.astro";
 import Container from "../../components/Container.astro";
 import Default from "../../layouts/Default.astro";
+import { db } from "../../db";
+import { researchers, areas, universities } from "../../db/schema";
+import { eq } from "drizzle-orm";
+import { formatDate } from "../../lib/dateFormater";
+
+const researchersEntries = await db
+  .select({
+    researcher: {
+      id: researchers.id,
+      name: researchers.name,
+      picture: researchers.picture,
+      email: researchers.email,
+      birthday: researchers.dateOfBirth,
+      contact: researchers.contactInfo,
+    },
+    area: {
+      name: areas.name,
+    },
+    university: {
+      name: universities.name,
+    },
+  })
+  .from(researchers)
+  .leftJoin(areas, eq(researchers.mainAreaId, areas.id))
+  .leftJoin(universities, eq(researchers.universityId, universities.id));
 ---
 
 <Default title="Pesquisadores">
@@ -15,6 +40,41 @@ import Default from "../../layouts/Default.astro";
           </a>
         </div>
       </div>
+    </Container>
+    <Container class="flex flex-col items-center justify-center">
+      <ul class="w-full max-w-2xl">
+        {
+          researchersEntries.map((data) => (
+            <>
+              <li class="bg-white shadow-md rounded-lg p-6 mb-4">
+                <h3 class="text-xl font-semibold">{data.researcher.name}</h3>
+
+                <div class="flex mb-4">
+                  <h3 class="text-m font-semibold text-gray-600">
+                    {data.area.name}
+                  </h3>
+                  <div class="mx-2">{"|"}</div>
+                  <h3 class="text-m font-semibold text-gray-600">
+                    {data.university.name}
+                  </h3>
+                </div>
+
+                <div>
+                  <div class="text-sm text-gray-500">
+                    {data.researcher.contact}
+                  </div>
+                  <div class="text-sm text-gray-500">
+                    {data.researcher.email}
+                  </div>
+                  <div class="text-sm text-gray-500">
+                    {formatDate(data.researcher.birthday as string)}
+                  </div>
+                </div>
+              </li>
+            </>
+          ))
+        }
+      </ul>
     </Container>
   </main>
 </Default>
