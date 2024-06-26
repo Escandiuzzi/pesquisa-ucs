@@ -56,4 +56,17 @@ export async function seed(db: BetterSQLite3Database<any>) {
       title: "Projeto de Biotecnologia",
     },
   ]);
+
+  await db.insert(productions).values([
+    {
+      id: 0,
+      projectId: 0,
+      title: "Artigo de Biotecnologia",
+      areaId: 3,
+      creatorId: 0,
+      links: "https://www.google.com",
+      pubDate: "2022-01-01",
+      typeId: 0,
+    },
+  ]);
 }

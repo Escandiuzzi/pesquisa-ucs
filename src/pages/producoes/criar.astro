@@ -33,6 +33,17 @@ const areas = await getAreasFlat();
       <Link href="/producoes" class="text-blue-600">&lt; Voltar</Link>
       <h2 class="text-2xl font-bold">Criar produção</h2>
       <Form hx-post="/producoes/api">
+        <Labelled name="creator" label="Criador" required>
+          <Select name="creator[]" required>
+            <option value="">Selecione um pesquisador</option>
+            {
+              researcherEntries.map((researcher) => (
+                <option value={researcher.id}>{researcher.name}</option>
+              ))
+            }
+          </Select>
+        </Labelled>
+        <hr />
         <Labelled name="project" label="Projeto" required>
           <Select name="project" required>
             <option value=""

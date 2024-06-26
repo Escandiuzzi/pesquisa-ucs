@@ -120,6 +120,7 @@ export const researchersToProjectsRelations = relations(
 // Productions
 export const productions = sqliteTable("productions", {
   id: integer("id").primaryKey({ autoIncrement: true }),
+  creatorId: integer("creator_id").references(() => researchers.id),
   projectId: integer("project_id").references(() => projects.id),
   title: text("title"),
   pubDate: text("pub_date"),
@@ -129,6 +130,10 @@ export const productions = sqliteTable("productions", {
 });
 
 export const productionsRelations = relations(productions, ({ one, many }) => ({
+  creator: one(researchers, {
+    fields: [productions.creatorId],
+    references: [researchers.id],
+  }),
   project: one(projects, {
     fields: [productions.projectId],
     references: [projects.id],

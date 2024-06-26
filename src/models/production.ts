@@ -11,6 +11,7 @@ export async function createProduction(
     idArea,
     idCollaborators,
     links,
+    idCreator,
   }: {
     title: string;
     pubDate: Date;
@@ -19,6 +20,7 @@ export async function createProduction(
     idArea: number;
     idCollaborators: number[];
     links: string;
+    idCreator: number;
   }
 ) {
   const production = (
@@ -37,6 +39,7 @@ export async function createProduction(
             "-" +
             pubDate.getDate(),
           typeId: idType,
+          creatorId: idCreator,
         },
       ])
       .returning({ id: productions.id })

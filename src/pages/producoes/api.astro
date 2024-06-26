@@ -13,6 +13,7 @@ switch (Astro.request.method) {
 
     try {
       await createProduction(db, {
+        idCreator: Number(formData.get("creator")),
         idArea: Number(formData.get("area")),
         idCollaborators: formData.getAll("collaborators[]").map(Number),
         idProject: Number(formData.get("project")),

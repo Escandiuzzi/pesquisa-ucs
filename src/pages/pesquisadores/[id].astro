@@ -1,0 +1,17 @@
+---
+import Container from "../../components/Container.astro";
+import Default from "../../layouts/Default.astro";
+
+const { id } = Astro.params;
+
+const existe = true;
+!existe && (Astro.response.status = 404);
+---
+
+<Default title="TODO: Detalhe de pesquisador">
+  <main>
+    <Container class="py-6">
+      <p>TODO: Detalhe de pesquisador {id}</p>
+    </Container>
+  </main>
+</Default>
