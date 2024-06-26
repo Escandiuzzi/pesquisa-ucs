@@ -36,6 +36,7 @@ test("criar um pesquisador", async () => {
 test("criar uma produção", async () => {
   let result = await createProduction(db, {
     title: "Teste",
+    idCreator: 1,
     pubDate: new Date(),
     idProject: 0,
     idType: 1,

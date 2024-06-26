@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "54a7af94-a490-4b40-aba6-a75dde0d68f3",
+  "id": "cb79867b-f74b-49e0-a166-075b5aa9b98e",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "areas": {
@@ -66,6 +66,13 @@
           "notNull": true,
           "autoincrement": true
         },
+        "creator_id": {
+          "name": "creator_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "project_id": {
           "name": "project_id",
           "type": "integer",
@@ -111,6 +118,19 @@
       },
       "indexes": {},
       "foreignKeys": {
+        "productions_creator_id_researchers_id_fk": {
+          "name": "productions_creator_id_researchers_id_fk",
+          "tableFrom": "productions",
+          "tableTo": "researchers",
+          "columnsFrom": [
+            "creator_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
         "productions_project_id_projects_id_fk": {
           "name": "productions_project_id_projects_id_fk",
           "tableFrom": "productions",
@@ -182,13 +202,6 @@
         "description": {
           "name": "description",
           "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "status": {
-          "name": "status",
-          "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
