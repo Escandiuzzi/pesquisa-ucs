@@ -2,6 +2,11 @@
 import Button from "../../components/Button.astro";
 import Container from "../../components/Container.astro";
 import Default from "../../layouts/Default.astro";
+import { db } from "../../db";
+import { projects } from "../../db/schema";
+import { getProjectStatus, formatDate } from "../../lib/dateFormater";
+const projectsEntries = await db.select().from(projects);
+
 ---
 
 <Default title="Projetos">
@@ -15,6 +20,23 @@ import Default from "../../layouts/Default.astro";
           </a>
         </div>
       </div>
+    </Container>
+    <Container class="flex flex-col items-center justify-center">
+      <ul class="w-full max-w-2xl">
+        {
+          projectsEntries.map((project) => (
+            <li class="bg-white shadow-md rounded-lg p-6 mb-4">
+              <h3 class="text-xl font-semibold">{project.title}</h3>
+              <div class="flex text-sm text-gray-600">
+                {formatDate(project.startDate as string)} -{" "}
+                {formatDate(project.endDate as string)}
+                <div class="ml-4 font-bold">{getProjectStatus(project.endDate as string)}</div>
+              </div>
+              <p class="mt-2">{project.description}</p>
+            </li>
+          ))
+        }
+      </ul>
     </Container>
   </main>
 </Default>

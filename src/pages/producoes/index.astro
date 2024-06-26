@@ -2,6 +2,46 @@
 import Button from "../../components/Button.astro";
 import Container from "../../components/Container.astro";
 import Default from "../../layouts/Default.astro";
+import { db } from "../../db";
+import {
+  productions,
+  projects,
+  areas,
+  researchers,
+  researchersToProductions,
+} from "../../db/schema";
+import { formatDate } from "../../lib/dateFormater";
+import { eq } from "drizzle-orm";
+
+const productionsEntries = await db
+  .select({
+    production: {
+      id: productions.id,
+      title: productions.title,
+      pubDate: productions.pubDate,
+      links: productions.links,
+    },
+    project: {
+      title: projects.title,
+    },
+    area: {
+      name: areas.name,
+    },
+    researchers: {
+      name: researchers.name,
+    },
+  })
+  .from(productions)
+  .leftJoin(projects, eq(productions.projectId, projects.id))
+  .leftJoin(areas, eq(productions.areaId, areas.id))
+  .leftJoin(
+    researchersToProductions,
+    eq(researchersToProductions.productionId, productions.id)
+  )
+  .leftJoin(
+    researchers,
+    eq(researchersToProductions.researcherId, researchers.id)
+  );
 ---
 
 <Default title="Produções">
@@ -15,6 +55,24 @@ import Default from "../../layouts/Default.astro";
           </a>
         </div>
       </div>
+    </Container>
+    <Container class="flex flex-col items-center justify-center">
+      <ul class="w-full max-w-2xl">
+        {
+          productionsEntries.map((data) => (
+            <>
+              <li class="bg-white shadow-md rounded-lg p-6 mb-4">
+                <h3 class="text-xl font-semibold">{data.production.title}</h3>
+                <h3 class="text-l font-normal">{data.project?.title}</h3>
+                <h3 class="text-l mt-3">{data.area?.name}</h3>
+                <div class="flex text-sm font-bold text-gray-600 justify-end">
+                  {formatDate(data.production.pubDate as string)}
+                </div>
+              </li>
+            </>
+          ))
+        }
+      </ul>
     </Container>
   </main>
 </Default>
