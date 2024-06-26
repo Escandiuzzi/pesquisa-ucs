@@ -63,8 +63,8 @@ const productionsEntries = await db
             <>
               <li class="bg-white shadow-md rounded-lg p-6 mb-4">
                 <h3 class="text-xl font-semibold">{data.production.title}</h3>
-                <h3 class="text-l font-normal">{data.project.title}</h3>
-                <h3 class="text-l mt-3">{data.area.name}</h3>
+                <h3 class="text-l font-normal">{data.project?.title}</h3>
+                <h3 class="text-l mt-3">{data.area?.name}</h3>
                 <div class="flex text-sm font-bold text-gray-600 justify-end">
                   {formatDate(data.production.pubDate as string)}
                 </div>
