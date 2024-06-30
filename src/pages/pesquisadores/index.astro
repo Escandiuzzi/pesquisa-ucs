@@ -41,11 +41,25 @@ const researchersEntries = await db
         </div>
       </div>
     </Container>
+    <Container class="py-6">
+      <div class="flex">
+        <input
+          type="text"
+          id="search-input"
+          class="w-72 p-2 border rounded"
+          placeholder="Pesquise um pesquisador por nome..."
+        />
+      </div>
+    </Container>
     <Container class="flex flex-col items-center justify-center">
       <ul class="w-full max-w-2xl">
         {
           researchersEntries.map((data) => (
-            <li class="bg-white shadow-md rounded-lg p-6 mb-4" onclick={`window.location.href='/pesquisadores/${data.researcher.id}'`}>
+            <li
+              class="bg-white shadow-md rounded-lg p-6 mb-4 reseacher-item"
+              onclick={`window.location.href='/pesquisadores/${data.researcher.id}'`}
+              researcher-name={data?.researcher?.name?.toLowerCase()}
+            >
               <h3 class="text-xl font-semibold">{data.researcher.name}</h3>
 
               <div class="flex mb-4">
@@ -74,3 +88,21 @@ const researchersEntries = await db
     </Container>
   </main>
 </Default>
+<script>
+  const input = document.getElementById("search-input") as HTMLInputElement;
+
+  input?.addEventListener("input", () => {
+    const filter = input?.value.toLowerCase();
+    const researchers = document.querySelectorAll(".reseacher-item");
+
+    researchers.forEach((researcher) => {
+      const name = researcher.getAttribute("researcher-name");
+      console.log(name, filter);
+      if (name?.includes(filter) || filter === "") {
+        (researcher as HTMLElement).style.display = "";
+      } else {
+        (researcher as HTMLElement).style.display = "none";
+      }
+    });
+  });
+</script>
