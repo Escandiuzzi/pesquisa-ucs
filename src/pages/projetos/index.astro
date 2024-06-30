@@ -6,7 +6,6 @@ import { db } from "../../db";
 import { projects } from "../../db/schema";
 import { getProjectStatus, formatDate } from "../../lib/dateFormater";
 const projectsEntries = await db.select().from(projects);
-
 ---
 
 <Default title="Projetos">
@@ -25,14 +24,33 @@ const projectsEntries = await db.select().from(projects);
       <ul class="w-full max-w-2xl">
         {
           projectsEntries.map((project) => (
-            <li class="bg-white shadow-md rounded-lg p-6 mb-4">
+            <li
+              class="bg-white shadow-md rounded-lg p-6 mb-4 relative"
+              onclick={`window.location.href='/projetos/${project.id}'`}
+            >
               <h3 class="text-xl font-semibold">{project.title}</h3>
               <div class="flex text-sm text-gray-600">
                 {formatDate(project.startDate as string)} -{" "}
                 {formatDate(project.endDate as string)}
-                <div class="ml-4 font-bold">{getProjectStatus(project.endDate as string)}</div>
+                <div class="ml-4 font-bold">
+                  {getProjectStatus(project.endDate as string)}
+                </div>
               </div>
               <p class="mt-2">{project.description}</p>
+              <div class="mt-4 flex justify-end space-x-2">
+                <button
+                  class="bg-yellow-500 text-white py-2 px-4 rounded hover:bg-yellow-600 focus:outline-none"
+                  onclick={`window.location.href='/projetos/${project.id}/edit'`}
+                >
+                  Edit
+                </button>
+                <button
+                  class="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600 focus:outline-none"
+                  onclick={`window.location.href='/projetos/${project.id}/delete'`}
+                >
+                  Delete
+                </button>
+              </div>
             </li>
           ))
         }

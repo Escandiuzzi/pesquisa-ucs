@@ -45,33 +45,29 @@ const researchersEntries = await db
       <ul class="w-full max-w-2xl">
         {
           researchersEntries.map((data) => (
-            <>
-              <li class="bg-white shadow-md rounded-lg p-6 mb-4">
-                <h3 class="text-xl font-semibold">{data.researcher.name}</h3>
+            <li class="bg-white shadow-md rounded-lg p-6 mb-4" onclick={`window.location.href='/pesquisadores/${data.researcher.id}'`}>
+              <h3 class="text-xl font-semibold">{data.researcher.name}</h3>
 
-                <div class="flex mb-4">
-                  <h3 class="text-m font-semibold text-gray-600">
-                    {data.area?.name}
-                  </h3>
-                  <div class="mx-2">{"|"}</div>
-                  <h3 class="text-m font-semibold text-gray-600">
-                    {data.university?.name}
-                  </h3>
-                </div>
+              <div class="flex mb-4">
+                <h3 class="text-m font-semibold text-gray-600">
+                  {data.area?.name}
+                </h3>
+                <div class="mx-2">{"|"}</div>
+                <h3 class="text-m font-semibold text-gray-600">
+                  {data.university?.name}
+                </h3>
+              </div>
 
-                <div>
-                  <div class="text-sm text-gray-500">
-                    {data.researcher.contact}
-                  </div>
-                  <div class="text-sm text-gray-500">
-                    {data.researcher.email}
-                  </div>
-                  <div class="text-sm text-gray-500">
-                    {formatDate(data.researcher.birthday as string)}
-                  </div>
+              <div>
+                <div class="text-sm text-gray-500">
+                  {data.researcher.contact}
                 </div>
-              </li>
-            </>
+                <div class="text-sm text-gray-500">{data.researcher.email}</div>
+                <div class="text-sm text-gray-500">
+                  {formatDate(data.researcher.birthday as string)}
+                </div>
+              </div>
+            </li>
           ))
         }
       </ul>

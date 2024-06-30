@@ -1,17 +1,54 @@
 ---
 import Container from "../../components/Container.astro";
 import Default from "../../layouts/Default.astro";
-
+import { db } from "../../db";
+import { projects, researchers } from "../../db/schema";
+import { eq } from 'drizzle-orm';
 const { id } = Astro.params;
 
-const existe = true;
-!existe && (Astro.response.status = 404);
+const idAsInt = parseInt(id as string);
+const data = await db.select({
+    project: {
+      id: projects.id,
+      title: projects.title,
+      startDate: projects.startDate,
+      endDate: projects.endDate,
+      description: projects.description
+    },
+    creator: {
+      name: researchers.name,
+    }
+  }).from(projects).where(eq(projects.id, idAsInt))
+  .leftJoin(researchers, eq(researchers.id, projects.creatorId));
+
+!data[0] && (Astro.response.status = 404);
+
+const result = data[0];
 ---
 
 <Default title="TODO: Detalhe de projeto">
   <main>
     <Container class="py-6">
-      <p>TODO: Detalhe de projeto {id}</p>
+      <div class="rounded overflow-hidden shadow-lg bg-white border border-gray-200 hover:shadow-xl transition-shadow duration-300">
+        <div class="px-6 py-4">
+          <div class="font-bold text-xl mb-2">{result.project.title}</div>
+          <p class="text-gray-700 text-base mb-4">
+            <strong>ID:</strong> {result.project.id}
+          </p>
+          <p class="text-gray-700 text-base mb-4">
+            <strong>Criador:</strong> {result?.creator?.name}
+          </p>
+          <p class="text-gray-700 text-base mb-4">
+            <strong>Data de inicio:</strong> {result.project.startDate}
+          </p>
+          <p class="text-gray-700 text-base mb-4">
+            <strong>Data de termino:</strong> {result.project.endDate}
+          </p>
+          <p class="text-gray-700 text-base mb-4">
+            <strong>Descrição:</strong> {result.project.description}
+          </p>
+        </div>
+      </div>
     </Container>
   </main>
 </Default>
