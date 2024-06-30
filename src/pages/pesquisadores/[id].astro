@@ -1,17 +1,72 @@
 ---
 import Container from "../../components/Container.astro";
 import Default from "../../layouts/Default.astro";
+import { db } from "../../db";
+import {
+  productions,
+  projects,
+  areas,
+  researchers,
+  universities,
+} from "../../db/schema";
+import { eq } from "drizzle-orm";
 
 const { id } = Astro.params;
 
+const idAsInt = parseInt(id as string);
+
+const researcher = await db
+  .select({
+    researcher: {
+      id: researchers.id,
+      name: researchers.name,
+      picture: researchers.picture,
+      email: researchers.email,
+      birthday: researchers.dateOfBirth,
+      contact: researchers.contactInfo,
+    },
+    area: {
+      name: areas.name,
+    },
+    university: {
+      name: universities.name,
+    },
+  })
+  .from(researchers)
+  .leftJoin(areas, eq(researchers.mainAreaId, areas.id))
+  .leftJoin(universities, eq(researchers.universityId, universities.id))
+  .where(eq(researchers.id, idAsInt));
+
 const existe = true;
 !existe && (Astro.response.status = 404);
+
+const result = researcher[0];
 ---
 
-<Default title="TODO: Detalhe de pesquisador">
+<Default>
   <main>
     <Container class="py-6">
-      <p>TODO: Detalhe de pesquisador {id}</p>
+      <div class="bg-white shadow-md rounded-lg p-6 mb-4">
+        <h3 class="text-xl font-semibold mb-2">{result.researcher.name}</h3>
+        <div class="text-sm text-gray-600 mb-2">
+          <strong>Email:</strong>
+          {result?.researcher?.email}
+        </div>
+        <div class="text-sm text-gray-600 mb-2">
+          <strong>Data de aniversário:</strong>
+          {result?.researcher?.birthday}
+        </div>
+        <div class="text-sm text-gray-600 mb-2">
+          <strong>Telefone:</strong>
+          {result?.researcher?.contact}
+        </div>
+        <div class="text-sm text-gray-600 mb-2">
+          <strong>Área:</strong>
+          {result?.area?.name}
+      </div>
+      <div class="text-sm text-gray-600 mb-2">
+        <strong>Universidade:</strong>
+        {result?.university?.name}
     </Container>
   </main>
 </Default>

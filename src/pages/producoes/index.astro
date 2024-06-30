@@ -70,6 +70,20 @@ const productionsEntries = await db
               <div class="flex text-sm font-bold text-gray-600 justify-end">
                 {formatDate(data.production.pubDate as string)}
               </div>
+              <div class="mt-4 flex justify-end space-x-2">
+                <button
+                  class="bg-yellow-500 text-white py-2 px-4 rounded hover:bg-yellow-600 focus:outline-none"
+                  onclick={`window.location.href='/projetos/${data.production.id}/edit'`}
+                >
+                  Edit
+                </button>
+                <button
+                  class="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600 focus:outline-none"
+                  onclick={`window.location.href='/projetos/${data.production.id}/delete'`}
+                >
+                  Delete
+                </button>
+              </div>
             </li>
           ))
         }
