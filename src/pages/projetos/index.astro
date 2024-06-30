@@ -6,6 +6,7 @@ import Select from "../../components/Select.astro";
 import { db } from "../../db";
 import { projects } from "../../db/schema";
 import { getProjectStatus, formatDate } from "../../lib/dateFormater";
+
 const projectsEntries = await db.select().from(projects);
 ---
 
@@ -22,14 +23,14 @@ const projectsEntries = await db.select().from(projects);
       </div>
     </Container>
     <Container class="py-6">
-      <div>
+      <div class="flex">
         <input
           type="text"
           id="search-input"
-          class="w-72 p-2 mb-4 border rounded"
+          class="w-72 p-2 border rounded"
           placeholder="Pesquise um projeto por título..."
         />
-        <Select id="selector" class="w-28 ml-4" name="status[]" required>
+        <Select id="selector" class="w-28 ml-4">
           <option value="">Todos</option>
           <option value="Concluído">Concluído</option>
           <option value="Em andamento">Em andamento</option>
@@ -53,9 +54,7 @@ const projectsEntries = await db.select().from(projects);
               >
                 {formatDate(project.startDate as string)} -{" "}
                 {formatDate(project.endDate as string)}
-                <div
-                  class="ml-4 font-bold"
-                >
+                <div class="ml-4 font-bold">
                   {getProjectStatus(project.endDate as string)}
                 </div>
               </div>
@@ -91,7 +90,7 @@ const projectsEntries = await db.select().from(projects);
 
     projects.forEach((project) => {
       const status = project.getAttribute("project-status");
-      
+
       if (status === selectedValue || selectedValue === "") {
         (project as HTMLElement).style.display = "";
       } else {
@@ -100,9 +99,7 @@ const projectsEntries = await db.select().from(projects);
     });
   });
 
-  input?.addEventListener("input", filterProjects);
-
-  function filterProjects() {
+  input?.addEventListener("input", () => {
     const filter = input?.value.toLowerCase();
     const projects = document.querySelectorAll(".project-item");
 
@@ -114,5 +111,5 @@ const projectsEntries = await db.select().from(projects);
         (project as HTMLElement).style.display = "none";
       }
     });
-  }
+  });
 </script>
