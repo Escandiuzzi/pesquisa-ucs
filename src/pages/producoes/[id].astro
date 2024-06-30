@@ -41,6 +41,20 @@ const data = await db
     eq(researchersToProductions.researcherId, researchers.id)
   ).where(eq(productions.id, idAsInt));
 
+const researchersData = await db
+  .select({
+    researcher: {
+      id: researchers.id,
+      name: researchers.name,
+    },
+  })
+  .from(researchers)
+  .leftJoin(
+    researchersToProductions,
+    eq(researchers.id, researchersToProductions.researcherId)
+  )
+  .where(eq(researchersToProductions.productionId, idAsInt));
+
 !data && (Astro.response.status = 404);
 
 const result = data[0];
@@ -59,14 +73,6 @@ const result = data[0];
           <strong>Areas:</strong>
           {result?.area?.name}
         </div>
-        <!-- <div class="text-sm text-gray-600 mb-2">
-          <strong>Pesquisadores:</strong>
-          {
-            result?.researchers?.map((researcher : any) => (
-              <span>{researcher.name}</span>
-            ))
-          }
-        </div> -->
         <div class="text-sm text-gray-600 mb-2">
           <strong>Data de publicação:</strong>
           {result?.production?.pubDate}
@@ -76,6 +82,15 @@ const result = data[0];
           <strong>Links:</strong>
           {result?.production?.links}
         </div>
+
+        <h3 class="text-xl font-semibold mt-6 mb-2">Pesquisadores</h3>
+        {
+          researchersData.map((data) => (
+            <div class="text-sm text-gray-600 mb-2 font-bold">
+              {data?.researcher.name}
+            </div>
+          ))
+        }
       </div>
     </Container>
   </main>

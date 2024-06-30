@@ -8,6 +8,7 @@ import {
   areas,
   researchers,
   universities,
+  researchersToProductions,
 } from "../../db/schema";
 import { eq } from "drizzle-orm";
 
@@ -37,8 +38,33 @@ const researcher = await db
   .leftJoin(universities, eq(researchers.universityId, universities.id))
   .where(eq(researchers.id, idAsInt));
 
-const existe = true;
-!existe && (Astro.response.status = 404);
+const dataProjects = await db
+  .select({
+    project: {
+      id: projects.id,
+      name: projects.title,
+    },
+  })
+  .from(projects)
+  .where(eq(projects.creatorId, idAsInt));
+
+const dataProductions = await db
+  .select({
+    production: {
+      id: productions.id,
+      name: productions.title,
+    },
+  })
+  .from(productions)
+  .leftJoin(
+    researchersToProductions,
+    eq(productions.id, researchersToProductions.productionId)
+  )
+  .where(eq(researchersToProductions.researcherId, idAsInt));
+
+console.log(dataProductions);
+
+!researcher && (Astro.response.status = 404);
 
 const result = researcher[0];
 ---
@@ -63,10 +89,30 @@ const result = researcher[0];
         <div class="text-sm text-gray-600 mb-2">
           <strong>Área:</strong>
           {result?.area?.name}
+        </div>
+        <div class="text-sm text-gray-600 mb-2">
+          <strong>Universidade:</strong>
+          {result?.university?.name}
+        </div>
+
+        <h3 class="text-xl font-semibold mt-6 mb-2">Projetos</h3>
+        {
+          dataProjects.map((data) => (
+            <div class="text-sm text-gray-600 mb-2 font-bold">
+              {data?.project.name}
+            </div>
+          ))
+        }
+
+        <h3 class="text-xl font-semibold mt-6 mb-2">Produções</h3>
+        {
+          dataProductions.map((data) => (
+            <div class="text-sm text-gray-600 mb-2 font-bold">
+              {data?.production.name}
+            </div>
+          ))
+        }
       </div>
-      <div class="text-sm text-gray-600 mb-2">
-        <strong>Universidade:</strong>
-        {result?.university?.name}
     </Container>
   </main>
 </Default>
