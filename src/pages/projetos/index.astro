@@ -2,6 +2,7 @@
 import Button from "../../components/Button.astro";
 import Container from "../../components/Container.astro";
 import Default from "../../layouts/Default.astro";
+import Select from "../../components/Select.astro";
 import { db } from "../../db";
 import { projects } from "../../db/schema";
 import { getProjectStatus, formatDate } from "../../lib/dateFormater";
@@ -20,19 +21,41 @@ const projectsEntries = await db.select().from(projects);
         </div>
       </div>
     </Container>
+    <Container class="py-6">
+      <div>
+        <input
+          type="text"
+          id="search-input"
+          class="w-72 p-2 mb-4 border rounded"
+          placeholder="Pesquise um projeto por título..."
+        />
+        <Select id="selector" class="w-28 ml-4" name="status[]" required>
+          <option value="">Todos</option>
+          <option value="Concluído">Concluído</option>
+          <option value="Em andamento">Em andamento</option>
+        </Select>
+      </div>
+    </Container>
     <Container class="flex flex-col items-center justify-center">
-      <ul class="w-full max-w-2xl">
+      <ul id="projects-list" class="w-full max-w-2xl">
         {
           projectsEntries.map((project) => (
             <li
-              class="bg-white shadow-md rounded-lg p-6 mb-4 relative"
+              class="bg-white shadow-md rounded-lg p-6 mb-4 relative project-item"
+              data-title={project?.title?.toLowerCase()}
+              project-status={getProjectStatus(project.endDate as string)}
               onclick={`window.location.href='/projetos/${project.id}'`}
             >
               <h3 class="text-xl font-semibold">{project.title}</h3>
-              <div class="flex text-sm text-gray-600">
+              <div
+                class="flex text-sm text-gray-600"
+                data-end-date={project.endDate}
+              >
                 {formatDate(project.startDate as string)} -{" "}
                 {formatDate(project.endDate as string)}
-                <div class="ml-4 font-bold">
+                <div
+                  class="ml-4 font-bold"
+                >
                   {getProjectStatus(project.endDate as string)}
                 </div>
               </div>
@@ -58,3 +81,38 @@ const projectsEntries = await db.select().from(projects);
     </Container>
   </main>
 </Default>
+<script>
+  const input = document.getElementById("search-input") as HTMLInputElement;
+  const selector = document.getElementById("selector") as HTMLInputElement;
+
+  selector?.addEventListener("change", () => {
+    const selectedValue = selector?.value;
+    const projects = document.querySelectorAll(".project-item");
+
+    projects.forEach((project) => {
+      const status = project.getAttribute("project-status");
+      
+      if (status === selectedValue || selectedValue === "") {
+        (project as HTMLElement).style.display = "";
+      } else {
+        (project as HTMLElement).style.display = "none";
+      }
+    });
+  });
+
+  input?.addEventListener("input", filterProjects);
+
+  function filterProjects() {
+    const filter = input?.value.toLowerCase();
+    const projects = document.querySelectorAll(".project-item");
+
+    projects.forEach((project) => {
+      const title = project.getAttribute("data-title");
+      if (title?.includes(filter)) {
+        (project as HTMLElement).style.display = "";
+      } else {
+        (project as HTMLElement).style.display = "none";
+      }
+    });
+  }
+</script>
