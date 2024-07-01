@@ -1,13 +1,27 @@
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { productions, researchersToProductions } from "../db/schema";
+import * as schema from "../db/schema";
+import { and, eq, ilike } from "drizzle-orm";
+
+export type ProductionType = "artigo" | "livro" | "patente" | "trabalho";
+
+export function getProductionType(type: ProductionType): number {
+  const typeId = ["artigo", "livro", "patente", "trabalho"].indexOf(type);
+
+  if (typeId === -1) {
+    throw new Error("Invalid production type");
+  }
+
+  return typeId;
+}
 
 export async function createProduction(
-  db: BetterSQLite3Database<any>,
+  db: BetterSQLite3Database<typeof schema>,
   {
     title,
     pubDate,
     idProject,
-    idType,
+    type,
     idArea,
     idCollaborators,
     links,
@@ -16,7 +30,7 @@ export async function createProduction(
     title: string;
     pubDate: Date;
     idProject: number;
-    idType: number;
+    type: ProductionType;
     idArea: number;
     idCollaborators: number[];
     links: string;
@@ -38,7 +52,7 @@ export async function createProduction(
             (pubDate.getMonth() + 1) +
             "-" +
             pubDate.getDate(),
-          typeId: idType,
+          typeId: getProductionType(type),
           creatorId: idCreator,
         },
       ])
@@ -51,6 +65,69 @@ export async function createProduction(
       researcherId: id,
     }))
   );
+
+  return production;
+}
+
+export async function getProductions(
+  db: BetterSQLite3Database<typeof schema>,
+  {
+    q,
+    idArea,
+    idCreator,
+    type,
+  }: {
+    q?: string;
+    idArea?: number;
+    idCreator?: number;
+    type?: ProductionType;
+  }
+) {
+  const productions = await db.query.productions.findMany({
+    columns: {
+      id: true,
+      title: true,
+      pubDate: true,
+      links: true,
+      typeId: true,
+    },
+    with: {
+      area: true,
+      creator: true,
+      project: true,
+      researchers: true,
+    },
+    where: and(
+      q ? ilike(schema.productions.title, q) : undefined,
+      idArea ? eq(schema.productions.areaId, idArea) : undefined,
+      idCreator ? eq(schema.productions.creatorId, idCreator) : undefined,
+      type ? eq(schema.productions.typeId, getProductionType(type)) : undefined
+    ),
+  });
+
+  return productions;
+}
+
+export async function getProduction(
+  db: BetterSQLite3Database<typeof schema>,
+  id: number
+) {
+  const production = await db.query.productions.findFirst({
+    columns: {
+      id: true,
+      title: true,
+      pubDate: true,
+      links: true,
+      typeId: true,
+    },
+    with: {
+      area: true,
+      creator: true,
+      project: true,
+      researchers: true,
+    },
+    where: eq(schema.productions.id, id),
+  });
 
   return production;
 }

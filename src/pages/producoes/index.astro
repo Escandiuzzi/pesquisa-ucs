@@ -4,49 +4,26 @@ import Container from "../../components/Container.astro";
 import Default from "../../layouts/Default.astro";
 import Select from "../../components/Select.astro";
 import { db } from "../../db";
-import {
-  productions,
-  projects,
-  areas,
-  researchers,
-  researchersToProductions,
-} from "../../db/schema";
 import { formatDate } from "../../lib/dateFormater";
-import { eq } from "drizzle-orm";
 import { getAreasFlat } from "../../models/area";
+import { getProductions, type ProductionType } from "../../models/production";
 
-const areasList = await getAreasFlat();
+const method = Astro.request.method;
+const query = Astro.url.searchParams;
 
-const productionsEntries = await db
-  .select({
-    production: {
-      id: productions.id,
-      title: productions.title,
-      pubDate: productions.pubDate,
-      links: productions.links,
-    },
-    project: {
-      title: projects.title,
-    },
-    area: {
-      id: areas.id,
-      name: areas.name,
-    },
-    researchers: {
-      name: researchers.name,
-    },
-  })
-  .from(productions)
-  .leftJoin(projects, eq(productions.projectId, projects.id))
-  .leftJoin(areas, eq(productions.areaId, areas.id))
-  .leftJoin(
-    researchersToProductions,
-    eq(researchersToProductions.productionId, productions.id)
-  )
-  .leftJoin(
-    researchers,
-    eq(researchersToProductions.researcherId, researchers.id)
-  );
+const productions =
+  method === "GET"
+    ? await getProductions(db, {
+        q: query.get("q") || undefined,
+        idArea: query.get("area") ? Number(query.get("area")) : undefined,
+        idCreator: query.get("creator")
+          ? Number(query.get("creator"))
+          : undefined,
+        type: (query.get("type") as ProductionType) || undefined,
+      })
+    : undefined;
+
+const areasList = await getAreasFlat(db);
 ---
 
 <Default title="Produções">
@@ -80,74 +57,43 @@ const productionsEntries = await db
       </div>
     </Container>
     <Container class="flex flex-col items-center justify-center">
-      <ul class="w-full max-w-2xl">
+      <ul class="w-full max-w-2xl space-y-4">
         {
-          productionsEntries.map((data) => (
-            <li
-              class="bg-white shadow-md rounded-lg p-6 mb-4 production-item"
-              data-title={data?.production.title?.toLowerCase()}
-              data-area={data?.area?.id}
-              onclick={`window.location.href='/producoes/${data.production.id}'`}
-            >
-              <h3 class="text-xl font-semibold">{data.production.title}</h3>
-              <h3 class="text-l font-normal">{data.project?.title}</h3>
-              <h3 class="text-l mt-3">{data.area?.name}</h3>
-              <div class="flex text-sm font-bold text-gray-600 justify-end">
-                {formatDate(data.production.pubDate as string)}
-              </div>
-              <div class="mt-4 flex justify-end space-x-2">
-                <button
-                  class="bg-yellow-500 text-white py-2 px-4 rounded hover:bg-yellow-600 focus:outline-none"
-                  onclick={`window.location.href='/projetos/${data.production.id}/edit'`}
+          productions && productions.length > 0 ? (
+            productions.map((production) => (
+              <div class="relative">
+                <a
+                  class="bg-white block shadow-md rounded-lg p-6 production-item pb-16"
+                  href={`/producoes/${production.id}`}
                 >
-                  Edit
-                </button>
-                <button
-                  class="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600 focus:outline-none"
-                  onclick={`window.location.href='/projetos/${data.production.id}/delete'`}
-                >
-                  Delete
-                </button>
+                  <h3 class="text-xl font-semibold">{production.title}</h3>
+                  <h3 class="text-l font-normal">{production.project.title}</h3>
+                  <h3 class="text-l mt-3">{production.area.name}</h3>
+                  <div class="flex text-sm font-bold text-gray-600 justify-end">
+                    {formatDate(production.pubDate)}
+                  </div>
+                </a>
+                <div class="absolute flex justify-end space-x-2 bottom-4 right-4">
+                  <a
+                    class="group block"
+                    href={`/projetos/${production.id}/edit`}
+                  >
+                    <Button variant="outline">Editar</Button>
+                  </a>
+                  <a
+                    class="group block"
+                    href={`/projetos/${production.id}/delete`}
+                  >
+                    <Button variant="destructive">Deletar</Button>
+                  </a>
+                </div>
               </div>
-            </li>
-          ))
+            ))
+          ) : (
+            <p>Nenhuma produção encontrada.</p>
+          )
         }
       </ul>
     </Container>
   </main>
 </Default>
-<script>
-  const input = document.getElementById("search-input") as HTMLInputElement;
-  const selector = document.getElementById("selector") as HTMLInputElement;
-
-  selector?.addEventListener("change", () => {
-    const selectedValue = selector?.value;
-    const productions = document.querySelectorAll(".production-item");
-
-    productions.forEach((production) => {
-      const area = production.getAttribute("data-area");
-
-      console.log(area, selectedValue);
-
-      if (area === selectedValue || selectedValue === "") {
-        (production as HTMLElement).style.display = "";
-      } else {
-        (production as HTMLElement).style.display = "none";
-      }
-    });
-  });
-
-  input?.addEventListener("input", () => {
-    const filter = input?.value.toLowerCase();
-    const projects = document.querySelectorAll(".production-item");
-
-    projects.forEach((production) => {
-      const title = production.getAttribute("data-title");
-      if (title?.includes(filter)) {
-        (production as HTMLElement).style.display = "";
-      } else {
-        (production as HTMLElement).style.display = "none";
-      }
-    });
-  });
-</script>

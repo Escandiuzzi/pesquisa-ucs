@@ -2,7 +2,12 @@
 import Container from "../../components/Container.astro";
 import Default from "../../layouts/Default.astro";
 import { db } from "../../db";
-import { projects, researchers, productions, productionsRelations } from "../../db/schema";
+import {
+  projects,
+  researchers,
+  productions,
+  productionsRelations,
+} from "../../db/schema";
 import { eq } from "drizzle-orm";
 import { getProjectStatus } from "../../lib/dateFormater";
 
@@ -26,7 +31,7 @@ const data = await db
   .where(eq(projects.id, idAsInt))
   .leftJoin(researchers, eq(researchers.id, projects.creatorId));
 
-  const dataProductions = await db
+const dataProductions = await db
   .select({
     production: {
       id: productions.id,
@@ -44,9 +49,7 @@ const result = data[0];
 <Default>
   <main>
     <Container class="py-6">
-      <div
-        class="rounded overflow-hidden shadow-lg bg-white border border-gray-200 hover:shadow-xl transition-shadow duration-300"
-      >
+      <div class="rounded shadow-lg bg-white border border-gray-200">
         <div class="px-6 py-4">
           <div class="font-bold text-xl mb-2">{result.project.title}</div>
           <p class="text-gray-700 text-base mb-4">

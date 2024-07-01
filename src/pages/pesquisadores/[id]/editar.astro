@@ -1,0 +1,171 @@
+---
+import Button from "../../../components/Button.astro";
+import Container from "../../../components/Container.astro";
+import Input from "../../../components/Input.astro";
+import Labelled from "../../../components/Labelled.astro";
+import Link from "../../../components/Link.astro";
+import Select from "../../../components/Select.astro";
+import Textarea from "../../../components/Textarea.astro";
+import { db } from "../../../db";
+import Default from "../../../layouts/Default.astro";
+import { getAreasFlat } from "../../../models/area";
+import { getResearcher } from "../../../models/researcher";
+import { getUniversities } from "../../../models/university";
+
+const { id } = Astro.params;
+const researcher = await getResearcher(db, parseInt(id as string));
+!researcher && (Astro.response.status = 404);
+
+const universityEntries = await getUniversities(db);
+const areas = await getAreasFlat(db);
+---
+
+<style>
+  form.htmx-request {
+    @apply animate-pulse opacity-75 cursor-progress;
+  }
+
+  form.htmx-request * {
+    @apply pointer-events-none;
+  }
+</style>
+
+<Default title="Editar pesquisador">
+  <main>
+    <Container class="py-6">
+      <Link href="/pesquisadores" class="text-blue-600">&lt; Voltar</Link>
+      <h2 class="text-2xl font-bold">Editar pesquisador</h2>
+      <form
+        enctype="multipart/form-data"
+        class="max-w-lg mx-auto space-y-4"
+        hx-target="#form_message"
+        hx-swap="innerHTML"
+        hx-put="/pesquisadores/api"
+      >
+        <Labelled name="password" label="Nova senha">
+          <Input type="password" name="password" />
+        </Labelled>
+        <Labelled name="password_confirm" label="Confirmar nova senha">
+          <Input type="password" name="password_confirm" />
+        </Labelled>
+        <hr />
+        <Labelled name="name" label="Nome">
+          <Input type="text" name="name" value={researcher?.name} />
+        </Labelled>
+        <Labelled name="picture" label="Foto de perfil">
+          <Input type="file" name="picture" accept="image/jpeg,image/png" />
+        </Labelled>
+        <Labelled name="university" label="Universidade">
+          <Select name="university">
+            <option value="">Selecione a universidade</option>
+            {
+              universityEntries.map((university) => (
+                <option
+                  value={university.id}
+                  selected={researcher?.universityId === university.id}
+                >
+                  {university.name}
+                </option>
+              ))
+            }
+          </Select>
+        </Labelled>
+        <Labelled name="main_area" label="Área de pesquisa principal">
+          <Select name="main_area">
+            <option value="">Selecione a área principal</option>
+            {
+              areas.map((area) => (
+                <option
+                  value={area.id}
+                  selected={researcher?.mainAreaId === area.id}
+                >
+                  {area.name}
+                </option>
+              ))
+            }
+          </Select>
+        </Labelled>
+        <Labelled name="areas[]" label="Áreas de Pesquisa">
+          <template id="area_template">
+            <div class="flex gap-2 group/control">
+              <Select name="areas[]">
+                <option value="">Selecione uma área</option>
+                {
+                  areas.map((area) => (
+                    <option value={area.id}>{area.name}</option>
+                  ))
+                }
+              </Select>
+              <button
+                class="group"
+                type="button"
+                onclick="this.closest('div').remove();"
+              >
+                <Button variant="destructive" size="sm">-</Button>
+              </button>
+            </div>
+          </template>
+          <div id="area_list" class="space-y-2">
+            {
+              researcher?.areas?.map((area) => (
+                <div class="flex gap-2 group/control">
+                  <Select name="areas[]">
+                    <option value="">Selecione uma área</option>
+                    {areas.map((innerArea) => (
+                      <option
+                        value={innerArea.id}
+                        selected={innerArea.id === area.areaId}
+                      >
+                        {innerArea.name}
+                      </option>
+                    ))}
+                  </Select>
+                  <button
+                    class="group"
+                    type="button"
+                    onclick="this.closest('div').remove();"
+                  >
+                    <Button variant="destructive" size="sm">
+                      -
+                    </Button>
+                  </button>
+                </div>
+              ))
+            }
+          </div>
+          <button
+            class="group mt-2 w-full"
+            type="button"
+            onclick="
+            const areaList = document.getElementById('area_list');
+            const select = document.getElementById('area_template').content.cloneNode(true).querySelector('div');
+            areaList.appendChild(select);
+          "
+          >
+            <Button variant="outline" size="sm">+ Adicionar área</Button>
+          </button>
+        </Labelled>
+        <Labelled name="dob" label="Data de Nascimento">
+          <Input
+            type="date"
+            name="dob"
+            value={researcher?.dateOfBirth
+              ?.split("-")
+              .map((n) => n.padStart(2, "0"))
+              .join("-")}
+          />
+        </Labelled>
+        <Labelled name="contact_info" label="Informações de contato">
+          <Textarea
+            rows="8"
+            name="contact_info"
+            value={researcher?.contactInfo}
+          />
+        </Labelled>
+
+        <button type="submit" class="group"><Button>Enviar</Button></button>
+      </form>
+      <div id="form_message"></div>
+    </Container>
+  </main>
+</Default>

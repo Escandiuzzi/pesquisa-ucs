@@ -3,30 +3,34 @@ import Button from "../../components/Button.astro";
 import Container from "../../components/Container.astro";
 import Default from "../../layouts/Default.astro";
 import { db } from "../../db";
-import { researchers, areas, universities } from "../../db/schema";
-import { eq } from "drizzle-orm";
 import { formatDate } from "../../lib/dateFormater";
+import Input from "../../components/Input.astro";
+import Select from "../../components/Select.astro";
+import { getAreasFlat } from "../../models/area";
+import { getUniversities } from "../../models/university";
+import { getResearchers } from "../../models/researcher";
 
-const researchersEntries = await db
-  .select({
-    researcher: {
-      id: researchers.id,
-      name: researchers.name,
-      picture: researchers.picture,
-      email: researchers.email,
-      birthday: researchers.dateOfBirth,
-      contact: researchers.contactInfo,
-    },
-    area: {
-      name: areas.name,
-    },
-    university: {
-      name: universities.name,
-    },
-  })
-  .from(researchers)
-  .leftJoin(areas, eq(researchers.mainAreaId, areas.id))
-  .leftJoin(universities, eq(researchers.universityId, universities.id));
+const method = Astro.request.method;
+const queryString = (key: string) => {
+  const value = Astro.url.searchParams.get(key);
+  return value !== undefined && value !== null && value !== ""
+    ? value
+    : undefined;
+};
+const queryNumber = (key: string) =>
+  queryString(key) !== undefined ? Number(queryString(key)) : undefined;
+
+const researchers =
+  method === "GET"
+    ? await getResearchers(db, {
+        q: queryString("q"),
+        area: queryNumber("area"),
+        university: queryNumber("universidade"),
+      })
+    : undefined;
+
+const universities = method === "GET" ? await getUniversities(db) : undefined;
+const areas = method === "GET" ? await getAreasFlat(db) : undefined;
 ---
 
 <Default title="Pesquisadores">
@@ -40,46 +44,98 @@ const researchersEntries = await db
           </a>
         </div>
       </div>
-    </Container>
-    <Container class="py-6">
-      <div class="flex">
-        <input
+      <h3 class="text-lg font-bold">Filtros</h3>
+      <form
+        hx-get="/pesquisadores"
+        hx-target="#results"
+        hx-select="#results"
+        hx-swap="outerHTML"
+        hx-replace-url="true"
+        class="flex pt-2 gap-2 max-w-none"
+      >
+        <Input
           type="text"
-          id="search-input"
-          class="w-72 p-2 border rounded"
-          placeholder="Pesquise um pesquisador por nome..."
+          name="q"
+          placeholder="Nome"
+          value={queryString("q")}
         />
-      </div>
+        <Select name="universidade">
+          <option value="">Selecione uma universidade...</option>
+          {
+            universities?.map((university) => (
+              <option
+                value={university.id}
+                selected={queryNumber("universidade") === university.id}
+              >
+                {university.name}
+              </option>
+            ))
+          }
+        </Select>
+        <Select name="area">
+          <option value="">Selecione uma área...</option>
+          {
+            areas?.map((area) => (
+              <option
+                value={area.id}
+                selected={queryNumber("area") === area.id}
+              >
+                {area.name}
+              </option>
+            ))
+          }
+        </Select>
+        <button type="submit" class="group block">
+          <Button size="sm" variant="outline">Buscar</Button>
+        </button>
+      </form>
     </Container>
-    <Container class="flex flex-col items-center justify-center">
+    <Container id="results" class="flex flex-col items-center justify-center">
       <ul class="w-full max-w-2xl">
         {
-          researchersEntries.map((data) => (
-            <li
-              class="bg-white shadow-md rounded-lg p-6 mb-4 reseacher-item"
-              onclick={`window.location.href='/pesquisadores/${data.researcher.id}'`}
-              researcher-name={data?.researcher?.name?.toLowerCase()}
-            >
-              <h3 class="text-xl font-semibold">{data.researcher.name}</h3>
-
-              <div class="flex mb-4">
-                <h3 class="text-m font-semibold text-gray-600">
-                  {data.area?.name}
-                </h3>
-                <div class="mx-2">{"|"}</div>
-                <h3 class="text-m font-semibold text-gray-600">
-                  {data.university?.name}
-                </h3>
-              </div>
-
-              <div>
-                <div class="text-sm text-gray-500">
-                  {data.researcher.contact}
+          researchers?.map((data) => (
+            <li class="relative">
+              <a
+                class="bg-white border border-gray-200 shadow-md rounded-lg block p-6 mb-4 reseacher-item"
+                href={`/pesquisadores/${data.id}`}
+              >
+                <div class="flex gap-4">
+                  <img
+                    src={data.picture || "/pfp.png"}
+                    alt={`Foto de perfil de ${data.name}`}
+                    class="w-12 h-12 rounded-full object-cover"
+                  />
+                  <div>
+                    <h3 class="text-xl font-semibold">{data.name}</h3>
+                    <div class="flex mb-4">
+                      <h3 class="text-m font-semibold text-gray-600">
+                        {data.mainArea?.name}
+                      </h3>
+                      <div class="mx-2">{"|"}</div>
+                      <h3 class="text-m font-semibold text-gray-600">
+                        {data.university?.name}
+                      </h3>
+                    </div>
+                  </div>
                 </div>
-                <div class="text-sm text-gray-500">{data.researcher.email}</div>
-                <div class="text-sm text-gray-500">
-                  {formatDate(data.researcher.birthday as string)}
+                <div>
+                  <div class="text-sm text-gray-500">{data.contactInfo}</div>
+                  <div class="text-sm text-gray-500">{data.email}</div>
+                  <div class="text-sm text-gray-500">
+                    {formatDate(data.dateOfBirth as string)}
+                  </div>
                 </div>
+              </a>
+              <div class="absolute flex justify-end space-x-2 bottom-4 right-4">
+                <a
+                  class="group block"
+                  href={`/pesquisadores/${data.id}/editar`}
+                >
+                  <Button variant="outline">Editar</Button>
+                </a>
+                <a class="group block" href={`/projetos/${data.id}/deletar`}>
+                  <Button variant="destructive">Deletar</Button>
+                </a>
               </div>
             </li>
           ))
@@ -88,21 +144,13 @@ const researchersEntries = await db
     </Container>
   </main>
 </Default>
-<script>
-  const input = document.getElementById("search-input") as HTMLInputElement;
 
-  input?.addEventListener("input", () => {
-    const filter = input?.value.toLowerCase();
-    const researchers = document.querySelectorAll(".reseacher-item");
+<style>
+  form.htmx-request {
+    @apply animate-pulse opacity-75 cursor-progress;
+  }
 
-    researchers.forEach((researcher) => {
-      const name = researcher.getAttribute("researcher-name");
-      console.log(name, filter);
-      if (name?.includes(filter) || filter === "") {
-        (researcher as HTMLElement).style.display = "";
-      } else {
-        (researcher as HTMLElement).style.display = "none";
-      }
-    });
-  });
-</script>
+  form.htmx-request * {
+    @apply pointer-events-none;
+  }
+</style>

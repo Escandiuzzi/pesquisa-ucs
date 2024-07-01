@@ -14,7 +14,7 @@ import { getAreasFlat } from "../../models/area";
 
 const researcherEntries = await db.select().from(researchers);
 const projectEntries = await db.select().from(projects);
-const areas = await getAreasFlat();
+const areas = await getAreasFlat(db);
 ---
 
 <style>
@@ -66,10 +66,10 @@ const areas = await getAreasFlat();
         <Labelled name="type" label="Tipo" required>
           <Select name="type" required>
             <option value="">Selecione o tipo</option>
-            <option value="1">Artigo</option>
-            <option value="2">Livro</option>
-            <option value="3">Patente</option>
-            <option value="4">Apresentação de trabalho</option>
+            <option value="artigo">Artigo</option>
+            <option value="livro">Livro</option>
+            <option value="patente">Patente</option>
+            <option value="trabalho">Apresentação de trabalho</option>
           </Select>
         </Labelled>
         <Labelled name="area" label="Área de pesquisa" required>

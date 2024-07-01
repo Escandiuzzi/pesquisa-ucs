@@ -1,6 +1,6 @@
 ---
 import { db } from "../../db";
-import { createProduction } from "../../models/production";
+import { createProduction, type ProductionType } from "../../models/production";
 
 export const partial = true;
 
@@ -17,7 +17,7 @@ switch (Astro.request.method) {
         idArea: Number(formData.get("area")),
         idCollaborators: formData.getAll("collaborators[]").map(Number),
         idProject: Number(formData.get("project")),
-        idType: Number(formData.get("type")),
+        type: formData.get("type") as ProductionType,
         pubDate: new Date(formData.get("pub_date") as string),
         title: formData.get("title") as string,
         links: formData.get("links") as string,
@@ -51,7 +51,6 @@ switch (Astro.request.method) {
 await new Promise((resolve) => setTimeout(resolve, 1000));
 ---
 
-{" "}
 {
   response?.type === "message" && (
     <>

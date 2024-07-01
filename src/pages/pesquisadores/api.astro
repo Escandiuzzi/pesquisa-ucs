@@ -23,6 +23,8 @@ switch (Astro.request.method) {
       break;
     }
 
+    let pictureUrl = undefined;
+
     if (formData.has("picture")) {
       const picture = formData.get("picture") as File;
       if (!["image/jpeg", "image/png"].includes(picture.type)) {
@@ -35,8 +37,8 @@ switch (Astro.request.method) {
       }
 
       // Upload file
-      const picturePath = `public/uploads/${randomId(16)}.${picture.type === "image/jpeg" ? "jpg" : "png"}`;
-      await fs.writeFile(picturePath, Buffer.from(await picture.arrayBuffer()));
+      pictureUrl = `/uploads/${randomId(16)}.${picture.type === "image/jpeg" ? "jpg" : "png"}`;
+      await fs.writeFile("public" + pictureUrl, Buffer.from(await picture.arrayBuffer()));
     }
 
     try {
@@ -45,6 +47,7 @@ switch (Astro.request.method) {
         password: bcrypt.hashSync(formData.get("password") as string, 10),
 
         name: formData.get("name") as string,
+        pictureUrl,
         idAreas: (formData.getAll("areas[]") as string[]).map(Number),
         idMainArea: Number(formData.get("main_area")),
         idUniversity: Number(formData.get("university")),
@@ -80,7 +83,6 @@ switch (Astro.request.method) {
 await new Promise((resolve) => setTimeout(resolve, 1000));
 ---
 
-{" "}
 {
   response?.type === "message" && (
     <>

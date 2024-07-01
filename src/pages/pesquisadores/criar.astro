@@ -1,19 +1,18 @@
 ---
 import Button from "../../components/Button.astro";
 import Container from "../../components/Container.astro";
-import Form from "../../components/Form.astro";
 import Input from "../../components/Input.astro";
 import Labelled from "../../components/Labelled.astro";
 import Link from "../../components/Link.astro";
 import Select from "../../components/Select.astro";
 import Textarea from "../../components/Textarea.astro";
 import { db } from "../../db";
-import { universities } from "../../db/schema";
 import Default from "../../layouts/Default.astro";
 import { getAreasFlat } from "../../models/area";
+import { getUniversities } from "../../models/university";
 
-const universityEntries = await db.select().from(universities);
-const areas = await getAreasFlat();
+const universityEntries = await getUniversities(db);
+const areas = await getAreasFlat(db);
 ---
 
 <style>
@@ -31,7 +30,13 @@ const areas = await getAreasFlat();
     <Container class="py-6">
       <Link href="/pesquisadores" class="text-blue-600">&lt; Voltar</Link>
       <h2 class="text-2xl font-bold">Criar pesquisador</h2>
-      <Form hx-post="/pesquisadores/api">
+      <form
+        enctype="multipart/form-data"
+        class="max-w-lg mx-auto space-y-4"
+        hx-target="#form_message"
+        hx-swap="innerHTML"
+        hx-post="/pesquisadores/api"
+      >
         <Labelled name="email" label="Email" required>
           <Input type="email" name="email" required />
         </Labelled>
@@ -64,7 +69,7 @@ const areas = await getAreasFlat();
             {areas.map((area) => <option value={area.id}>{area.name}</option>)}
           </Select>
         </Labelled>
-        <Labelled name="areas[]" label="Áreas de Pesquisa" required>
+        <Labelled name="areas[]" label="Áreas de Pesquisa">
           <template id="area_template">
             <div class="flex gap-2 group/control">
               <Select name="areas[]" required>
@@ -105,7 +110,8 @@ const areas = await getAreasFlat();
         </Labelled>
 
         <button type="submit" class="group"><Button>Enviar</Button></button>
-      </Form>
+      </form>
+      <div id="form_message"></div>
     </Container>
   </main>
 </Default>

@@ -1,8 +1,9 @@
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { projects, researchersToProjects } from "../db/schema";
+import * as schema from "../db/schema";
 
 export async function createProject(
-  db: BetterSQLite3Database<any>,
+  db: BetterSQLite3Database<typeof schema>,
   {
     creatorId,
     title,

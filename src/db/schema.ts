@@ -9,7 +9,7 @@ import {
 // Universities.
 export const universities = sqliteTable("universities", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  name: text("name").unique(),
+  name: text("name").unique().notNull(),
 });
 
 export const universitiesRelations = relations(universities, ({ many }) => ({
@@ -19,7 +19,7 @@ export const universitiesRelations = relations(universities, ({ many }) => ({
 // Areas of research. Can have a parent area.
 export const areas = sqliteTable("areas", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  name: text("name").unique(),
+  name: text("name").unique().notNull(),
   parentId: integer("parent_id").references((): AnySQLiteColumn => areas.id),
 });
 
@@ -35,14 +35,18 @@ export const areasRelations = relations(areas, ({ one, many }) => ({
 // Researchers.
 export const researchers = sqliteTable("researchers", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  email: text("email").unique(),
-  passwordHash: text("password_hash"),
+  email: text("email").unique().notNull(),
+  passwordHash: text("password_hash").notNull(),
 
-  name: text("name"),
+  name: text("name").notNull(),
   picture: text("picture"),
-  universityId: integer("university_id").references(() => universities.id),
-  mainAreaId: integer("main_area_id").references(() => areas.id),
-  dateOfBirth: text("date_of_birth"),
+  universityId: integer("university_id")
+    .notNull()
+    .references(() => universities.id),
+  mainAreaId: integer("main_area_id")
+    .notNull()
+    .references(() => areas.id),
+  dateOfBirth: text("date_of_birth").notNull(),
   contactInfo: text("contact_info"),
 });
 
@@ -60,8 +64,12 @@ export const researchersRelations = relations(researchers, ({ one, many }) => ({
 
 // Researchers to areas of research.
 export const researchersToAreas = sqliteTable("researchers_to_areas", {
-  researcherId: integer("researcher_id").references(() => researchers.id),
-  areaId: integer("area_id").references(() => areas.id),
+  researcherId: integer("researcher_id")
+    .notNull()
+    .references(() => researchers.id),
+  areaId: integer("area_id")
+    .notNull()
+    .references(() => areas.id),
 });
 
 export const researchersToAreasRelations = relations(
@@ -81,9 +89,11 @@ export const researchersToAreasRelations = relations(
 // Projects.
 export const projects = sqliteTable("projects", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  creatorId: integer("creator_id").references(() => researchers.id),
-  title: text("title"),
-  startDate: text("start_date"),
+  creatorId: integer("creator_id")
+    .notNull()
+    .references(() => researchers.id),
+  title: text("title").notNull(),
+  startDate: text("start_date").notNull(),
   endDate: text("end_date"),
   description: text("description"),
 });
@@ -99,8 +109,12 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
 
 // Researchers to projects.
 export const researchersToProjects = sqliteTable("researchers_to_projects", {
-  researcherId: integer("researcher_id").references(() => researchers.id),
-  projectId: integer("project_id").references(() => projects.id),
+  researcherId: integer("researcher_id")
+    .notNull()
+    .references(() => researchers.id),
+  projectId: integer("project_id")
+    .notNull()
+    .references(() => projects.id),
 });
 
 export const researchersToProjectsRelations = relations(
@@ -120,12 +134,18 @@ export const researchersToProjectsRelations = relations(
 // Productions
 export const productions = sqliteTable("productions", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  creatorId: integer("creator_id").references(() => researchers.id),
-  projectId: integer("project_id").references(() => projects.id),
-  title: text("title"),
-  pubDate: text("pub_date"),
-  typeId: integer("type"),
-  areaId: integer("area_id").references(() => areas.id),
+  creatorId: integer("creator_id")
+    .notNull()
+    .references(() => researchers.id),
+  projectId: integer("project_id")
+    .notNull()
+    .references(() => projects.id),
+  title: text("title").notNull(),
+  pubDate: text("pub_date").notNull(),
+  typeId: integer("type").notNull(),
+  areaId: integer("area_id")
+    .notNull()
+    .references(() => areas.id),
   links: text("links"),
 });
 
@@ -150,8 +170,12 @@ export const productionsRelations = relations(productions, ({ one, many }) => ({
 export const researchersToProductions = sqliteTable(
   "researchers_to_productions",
   {
-    researcherId: integer("researcher_id").references(() => researchers.id),
-    productionId: integer("production_id").references(() => productions.id),
+    researcherId: integer("researcher_id")
+      .notNull()
+      .references(() => researchers.id),
+    productionId: integer("production_id")
+      .notNull()
+      .references(() => productions.id),
   }
 );
 
