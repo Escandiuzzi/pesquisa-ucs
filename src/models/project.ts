@@ -213,8 +213,8 @@ export async function deleteProject(
     .select()
     .from(schema.productions)
     .where(eq(schema.productions.projectId, id));
-  productions.forEach(async (production) => {
+  for (const production of productions) {
     await deleteProduction(db, production.id);
-  });
+  }
   await db.delete(projects).where(eq(projects.id, id));
 }
