@@ -6,6 +6,7 @@ import { formatDate, getProjectStatus } from "../../../lib/dateFormatter";
 import Link from "../../../components/Link.astro";
 import Button from "../../../components/Button.astro";
 import { deleteProject, getProject } from "../../../models/project";
+import { getResearcherByToken } from "../../../models/researcher";
 
 const { id } = Astro.params;
 
@@ -14,6 +15,16 @@ const project = await getProject(db, parseInt(id as string));
 if (!project) {
   Astro.response.status = 404;
   return;
+}
+
+const token = Astro.cookies.get("token")?.value;
+let user: Awaited<ReturnType<typeof getResearcherByToken>> | undefined =
+  undefined;
+if (token) {
+  user = await getResearcherByToken(db, token);
+}
+if (user?.id !== project.creatorId) {
+  return Astro.redirect(`/404`, 404);
 }
 
 if (Astro.request.method === "POST") {

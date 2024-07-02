@@ -2,14 +2,29 @@
 import Container from "../../../components/Container.astro";
 import Default from "../../../layouts/Default.astro";
 import { db } from "../../../db";
-import { deleteResearcher, getResearcher } from "../../../models/researcher";
+import {
+  deleteResearcher,
+  getResearcher,
+  getResearcherByToken,
+} from "../../../models/researcher";
 import { formatDate } from "../../../lib/dateFormatter";
 import Link from "../../../components/Link.astro";
 import Button from "../../../components/Button.astro";
 
 const { id } = Astro.params;
+const researcherId = parseInt(id as string);
 
-const researcher = await getResearcher(db, parseInt(id as string));
+const token = Astro.cookies.get("token")?.value;
+let user: Awaited<ReturnType<typeof getResearcherByToken>> | undefined =
+  undefined;
+if (token) {
+  user = await getResearcherByToken(db, token);
+}
+if (!user || user.id !== researcherId) {
+  return Astro.redirect(`/404`, 404);
+}
+
+const researcher = await getResearcher(db, researcherId);
 
 if (!researcher) {
   Astro.response.status = 404;
@@ -17,7 +32,7 @@ if (!researcher) {
 }
 
 if (Astro.request.method === "POST") {
-  await deleteResearcher(db, parseInt(id as string));
+  await deleteResearcher(db, researcherId);
   return Astro.redirect("/pesquisadores", 303);
 }
 ---

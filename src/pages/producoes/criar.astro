@@ -1,44 +1,126 @@
 ---
 import Button from "../../components/Button.astro";
 import Container from "../../components/Container.astro";
-import Form from "../../components/Form.astro";
 import Input from "../../components/Input.astro";
 import Labelled from "../../components/Labelled.astro";
 import Link from "../../components/Link.astro";
 import Select from "../../components/Select.astro";
 import Textarea from "../../components/Textarea.astro";
 import { db } from "../../db";
-import { projects, researchers } from "../../db/schema";
 import Default from "../../layouts/Default.astro";
 import { getAreasFlat } from "../../models/area";
+import {
+  formDate,
+  formNumber,
+  formNumberList,
+  formString,
+} from "../../lib/query";
+import { getResearcherByToken, getResearchers } from "../../models/researcher";
+import { getProjects } from "../../models/project";
+import { createProduction, type ProductionType } from "../../models/production";
 
-const researcherEntries = await db.select().from(researchers);
-const projectEntries = await db.select().from(projects);
+const token = Astro.cookies.get("token")?.value;
+let user: Awaited<ReturnType<typeof getResearcherByToken>> | undefined =
+  undefined;
+if (token) {
+  user = await getResearcherByToken(db, token);
+}
+if (!user) {
+  return Astro.redirect(`/404`, 404);
+}
+
+const errors: Record<string, string> = {};
+let input: {
+  creator?: number;
+  title?: string;
+  pub_date?: Date;
+  type?: ProductionType;
+  area?: number;
+  collaborators?: number[];
+  links?: string;
+  project?: number;
+} = {};
+
+switch (Astro.request.method) {
+  case "POST":
+    const f = await Astro.request.formData();
+    input = {
+      creator: formNumber(f, "creator"),
+      title: formString(f, "title"),
+      pub_date: formDate(f, "pub_date"),
+      type: formString(f, "type") as ProductionType,
+      area: formNumber(f, "area"),
+      collaborators: formNumberList(f, "collaborators[]"),
+      links: formString(f, "links"),
+      project: formNumber(f, "project"),
+    };
+
+    if (
+      input.creator === undefined ||
+      input.title === undefined ||
+      input.pub_date === undefined ||
+      input.type === undefined ||
+      input.area === undefined ||
+      input.project === undefined ||
+      input.links === undefined
+    ) {
+      errors.generic = "Preencha todos os campos obrigatórios.";
+      break;
+    }
+
+    try {
+      const producao = await createProduction(db, {
+        idArea: input.area,
+        idCollaborators: input.collaborators || [],
+        idCreator: input.creator,
+        idProject: input.project,
+        links: input.links,
+        pubDate: input.pub_date,
+        title: input.title,
+        type: input.type,
+      });
+
+      return Astro.redirect(`/producoes/${producao.id}`, 303);
+    } catch (error) {
+      console.error(error);
+
+      errors.generic =
+        "Erro ao criar produção! Confira os dados e tente novamente.";
+    }
+    break;
+
+  default:
+    break;
+}
+
+const researchers = await getResearchers(db, {});
+const projects = await getProjects(db, {});
 const areas = await getAreasFlat(db);
 ---
-
-<style>
-  form.htmx-request {
-    @apply animate-pulse opacity-75 cursor-progress;
-  }
-
-  form.htmx-request * {
-    @apply pointer-events-none;
-  }
-</style>
 
 <Default title="Criar produção">
   <main>
     <Container class="py-6">
       <Link href="/producoes" class="text-blue-600">&lt; Voltar</Link>
       <h2 class="text-2xl font-bold">Criar produção</h2>
-      <Form hx-post="/producoes/api">
+      <form
+        enctype="multipart/form-data"
+        action=""
+        method="post"
+        class="max-w-lg mx-auto space-y-4"
+      >
+        {errors.generic && <p class="text-red-600">{errors.generic}</p>}
         <Labelled name="creator" label="Criador" required>
-          <Select name="creator[]" required>
+          <Select name="creator" required>
             <option value="">Selecione um pesquisador</option>
             {
-              researcherEntries.map((researcher) => (
-                <option value={researcher.id}>{researcher.name}</option>
+              researchers.map((researcher) => (
+                <option
+                  value={researcher.id}
+                  selected={input.creator === researcher.id}
+                >
+                  {researcher.name}
+                </option>
               ))
             }
           </Select>
@@ -50,41 +132,65 @@ const areas = await getAreasFlat(db);
               >Selecione o projeto a que essa produção pertence</option
             >
             {
-              projectEntries.map((project) => (
-                <option value={project.id}>{project.title}</option>
+              projects.map((project) => (
+                <option
+                  value={project.id}
+                  selected={input.project === project.id}
+                >
+                  {project.title}
+                </option>
               ))
             }
           </Select>
         </Labelled>
         <hr />
         <Labelled name="title" label="Título" required>
-          <Input type="text" name="title" required />
+          <Input type="text" name="title" required value={input.title} />
         </Labelled>
         <Labelled name="pub_date" label="Data de Publicação" required>
-          <Input type="date" name="pub_date" required />
+          <Input
+            type="date"
+            name="pub_date"
+            required
+            value={input.pub_date?.toISOString().split("T")[0]}
+          />
         </Labelled>
         <Labelled name="type" label="Tipo" required>
           <Select name="type" required>
             <option value="">Selecione o tipo</option>
-            <option value="artigo">Artigo</option>
-            <option value="livro">Livro</option>
-            <option value="patente">Patente</option>
-            <option value="trabalho">Apresentação de trabalho</option>
+            <option value="artigo" selected={input.type === "artigo"}
+              >Artigo</option
+            >
+            <option value="livro" selected={input.type === "livro"}
+              >Livro</option
+            >
+            <option value="patente" selected={input.type === "patente"}
+              >Patente</option
+            >
+            <option value="trabalho" selected={input.type === "trabalho"}
+              >Apresentação de trabalho</option
+            >
           </Select>
         </Labelled>
         <Labelled name="area" label="Área de pesquisa" required>
           <Select name="area" required>
             <option value="">Selecione a área</option>
-            {areas.map((area) => <option value={area.id}>{area.name}</option>)}
+            {
+              areas.map((area) => (
+                <option value={area.id} selected={input.area === area.id}>
+                  {area.name}
+                </option>
+              ))
+            }
           </Select>
         </Labelled>
-        <Labelled name="collaborators[]" label="Colaboradores" required>
+        <Labelled name="collaborators[]" label="Colaboradores">
           <template id="collab_template">
             <div class="flex gap-2 group/control">
               <Select name="collaborators[]" required>
                 <option value="">Selecione um pesquisador</option>
                 {
-                  researcherEntries.map((researcher) => (
+                  researchers.map((researcher) => (
                     <option value={researcher.id}>{researcher.name}</option>
                   ))
                 }
@@ -98,7 +204,34 @@ const areas = await getAreasFlat(db);
               </button>
             </div>
           </template>
-          <div id="collab_list" class="space-y-2"></div>
+          <div id="collab_list" class="space-y-2">
+            {
+              input.collaborators?.map((collabId) => (
+                <div class="flex gap-2 group/control">
+                  <Select name="collaborators[]" required>
+                    <option value="">Selecione um pesquisador</option>
+                    {researchers.map((researcher) => (
+                      <option
+                        value={researcher.id}
+                        selected={researcher.id === collabId}
+                      >
+                        {researcher.name}
+                      </option>
+                    ))}
+                  </Select>
+                  <button
+                    class="group"
+                    type="button"
+                    onclick="this.closest('div').remove();"
+                  >
+                    <Button variant="destructive" size="sm">
+                      -
+                    </Button>
+                  </button>
+                </div>
+              ))
+            }
+          </div>
           <button
             class="group mt-2 w-full"
             type="button"
@@ -112,11 +245,11 @@ const areas = await getAreasFlat(db);
           </button>
         </Labelled>
         <Labelled name="links" label="Links">
-          <Textarea rows="8" name="links" />
+          <Textarea rows="8" name="links" value={input.links} />
         </Labelled>
 
         <button type="submit" class="group"><Button>Enviar</Button></button>
-      </Form>
+      </form>
     </Container>
   </main>
 </Default>

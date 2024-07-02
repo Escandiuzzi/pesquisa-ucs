@@ -1,0 +1,18 @@
+---
+import { db } from "../db";
+import { getResearcherByToken, logout } from "../models/researcher";
+
+const token = Astro.cookies.get("token")?.value;
+
+if (token) {
+  const researcher = await getResearcherByToken(db, token);
+
+  if (researcher) {
+    await logout(db, token);
+    Astro.cookies.set("token", "", { path: "/", maxAge: 0 });
+    return Astro.redirect("/", 303);
+  }
+}
+
+Astro.response.status = 404;
+---

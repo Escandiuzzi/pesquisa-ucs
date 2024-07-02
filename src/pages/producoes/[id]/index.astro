@@ -1,0 +1,90 @@
+---
+import Container from "../../../components/Container.astro";
+import Default from "../../../layouts/Default.astro";
+import { db } from "../../../db";
+import Link from "../../../components/Link.astro";
+import { getProduction } from "../../../models/production";
+import { formatDate } from "../../../lib/dateFormatter";
+import Button from "../../../components/Button.astro";
+import { getResearcherByToken } from "../../../models/researcher";
+
+const { id } = Astro.params;
+const productionId = parseInt(id as string);
+
+const production = await getProduction(db, productionId);
+
+const token = Astro.cookies.get("token")?.value;
+let user: Awaited<ReturnType<typeof getResearcherByToken>> | undefined =
+  undefined;
+if (token) {
+  user = await getResearcherByToken(db, token);
+}
+
+if (!production) {
+  Astro.response.status = 404;
+  return;
+}
+---
+
+<Default title={production.title}>
+  <main>
+    <Container class="py-6">
+      <Link href="/producoes" class="text-blue-600">&lt; Voltar</Link>
+      <div class="flex justify-between">
+        <h2 class="text-2xl font-bold mb-4">Produção</h2>
+        {
+          user?.id === production.creator.id && (
+            <div class="flex space-x-2">
+              <a class="group block" href={`/producoes/${id}/editar`}>
+                <Button variant="outline" size="sm">
+                  Editar
+                </Button>
+              </a>
+              <a class="group block" href={`/producoes/${id}/deletar`}>
+                <Button variant="destructive" size="sm">
+                  Deletar
+                </Button>
+              </a>
+            </div>
+          )
+        }
+      </div>
+      <div
+        class="bg-white border border-gray-200 shadow-md rounded-lg p-6 mb-4"
+      >
+        <h3 class="text-xl font-semibold mb-2">{production.title}</h3>
+        <div class="text-sm text-gray-600 mb-2">
+          <strong>Projeto:</strong>
+          <Link href={`/projetos/${production.project.id}`}>
+            {production.project.title}
+          </Link>
+        </div>
+        <div class="text-sm text-gray-600 mb-2">
+          <strong>Areas:</strong>
+          {production.area.name}
+        </div>
+        <div class="text-sm text-gray-600 mb-2">
+          <strong>Data de publicação:</strong>
+          {formatDate(production.pubDate)}
+        </div>
+
+        <div class="text-sm text-gray-600 mb-2 whitespace-pre-line">
+          <strong>Links:</strong><br />
+          {production.links}
+        </div>
+
+        <h3 class="text-xl font-semibold mt-6 mb-2">Pesquisadores</h3>
+        {
+          production.researchers.map((data) => (
+            <Link
+              class="text-sm text-gray-600 mb-2 font-bold block"
+              href={`/pesquisadores/${data.researcher.id}`}
+            >
+              {data.researcher.name}
+            </Link>
+          ))
+        }
+      </div>
+    </Container>
+  </main>
+</Default>

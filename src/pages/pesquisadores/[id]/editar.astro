@@ -10,7 +10,11 @@ import { db } from "../../../db";
 import Default from "../../../layouts/Default.astro";
 import { getAreasFlat } from "../../../models/area";
 import { getUniversities } from "../../../models/university";
-import { getResearcher, updateResearcher } from "../../../models/researcher";
+import {
+  getResearcher,
+  getResearcherByToken,
+  updateResearcher,
+} from "../../../models/researcher";
 import {
   formString,
   formFile,
@@ -23,6 +27,17 @@ import { replaceImage } from "../../../lib/upload";
 
 const { id } = Astro.params;
 const researcherId = parseInt(id as string);
+
+const token = Astro.cookies.get("token")?.value;
+let user: Awaited<ReturnType<typeof getResearcherByToken>> | undefined =
+  undefined;
+if (token) {
+  user = await getResearcherByToken(db, token);
+}
+if (!user || user.id !== researcherId) {
+  return Astro.redirect(`/404`, 404);
+}
+
 const currentResearcher = await getResearcher(db, researcherId);
 
 if (!currentResearcher) {

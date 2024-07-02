@@ -6,6 +6,7 @@ import { formatDate, getProjectStatus } from "../../../lib/dateFormatter";
 import Link from "../../../components/Link.astro";
 import Button from "../../../components/Button.astro";
 import { getProject } from "../../../models/project";
+import { getResearcherByToken } from "../../../models/researcher";
 
 const { id } = Astro.params;
 
@@ -15,6 +16,13 @@ if (!project) {
   Astro.response.status = 404;
   return;
 }
+
+const token = Astro.cookies.get("token")?.value;
+let user: Awaited<ReturnType<typeof getResearcherByToken>> | undefined =
+  undefined;
+if (token) {
+  user = await getResearcherByToken(db, token);
+}
 ---
 
 <Default title={project.title}>
@@ -23,14 +31,22 @@ if (!project) {
       <Link href="/projetos" class="text-blue-600">&lt; Voltar</Link>
       <div class="flex justify-between">
         <h2 class="text-2xl font-bold mb-4">Projeto</h2>
-        <div class="flex space-x-2">
-          <a class="group block" href={`/projetos/${id}/editar`}>
-            <Button variant="outline" size="sm">Editar</Button>
-          </a>
-          <a class="group block" href={`/projetos/${id}/deletar`}>
-            <Button variant="destructive" size="sm">Deletar</Button>
-          </a>
-        </div>
+        {
+          user?.id === project.creatorId && (
+            <div class="flex space-x-2">
+              <a class="group block" href={`/projetos/${id}/editar`}>
+                <Button variant="outline" size="sm">
+                  Editar
+                </Button>
+              </a>
+              <a class="group block" href={`/projetos/${id}/deletar`}>
+                <Button variant="destructive" size="sm">
+                  Deletar
+                </Button>
+              </a>
+            </div>
+          )
+        }
       </div>
       <div
         class="bg-white shadow-md border border-gray-200 rounded-lg p-6 mb-4 text-sm text-gray-600"

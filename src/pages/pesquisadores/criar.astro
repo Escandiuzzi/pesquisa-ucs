@@ -10,7 +10,10 @@ import { db } from "../../db";
 import Default from "../../layouts/Default.astro";
 import { getAreasFlat } from "../../models/area";
 import { getUniversities } from "../../models/university";
-import { createResearcher } from "../../models/researcher";
+import {
+  createResearcher,
+  getResearcherByToken,
+} from "../../models/researcher";
 import {
   formString,
   formFile,
@@ -19,6 +22,16 @@ import {
   formDate,
 } from "../../lib/query";
 import { uploadImage } from "../../lib/upload";
+
+const token = Astro.cookies.get("token")?.value;
+let user: Awaited<ReturnType<typeof getResearcherByToken>> | undefined =
+  undefined;
+if (token) {
+  user = await getResearcherByToken(db, token);
+}
+if (user) {
+  return Astro.redirect(`/404`, 404);
+}
 
 const errors: Record<string, string> = {};
 let input: {
@@ -51,13 +64,13 @@ switch (Astro.request.method) {
     };
 
     if (
-      !input.email ||
-      !input.password ||
-      !input.password_confirm ||
-      !input.name ||
-      !input.university ||
-      !input.main_area ||
-      !input.dob
+      input.email === undefined ||
+      input.password === undefined ||
+      input.password_confirm === undefined ||
+      input.name === undefined ||
+      input.university === undefined ||
+      input.main_area === undefined ||
+      input.dob === undefined
     ) {
       errors.generic = "Preencha todos os campos obrigatórios.";
       break;

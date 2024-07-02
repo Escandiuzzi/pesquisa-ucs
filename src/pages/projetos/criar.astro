@@ -15,7 +15,17 @@ import {
   formString,
 } from "../../lib/query";
 import { createProject } from "../../models/project";
-import { getResearchers } from "../../models/researcher";
+import { getResearcherByToken, getResearchers } from "../../models/researcher";
+
+const token = Astro.cookies.get("token")?.value;
+let user: Awaited<ReturnType<typeof getResearcherByToken>> | undefined =
+  undefined;
+if (token) {
+  user = await getResearcherByToken(db, token);
+}
+if (!user) {
+  return Astro.redirect(`/404`, 404);
+}
 
 const errors: Record<string, string> = {};
 let input: {
@@ -39,7 +49,11 @@ switch (Astro.request.method) {
       description: formString(f, "description"),
     };
 
-    if (!input.creator || !input.title || !input.start_date) {
+    if (
+      input.creator === undefined ||
+      input.title === undefined ||
+      input.start_date === undefined
+    ) {
       errors.generic = "Preencha todos os campos obrigatórios.";
       break;
     }

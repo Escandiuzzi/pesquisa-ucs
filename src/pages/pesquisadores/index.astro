@@ -8,8 +8,15 @@ import Input from "../../components/Input.astro";
 import Select from "../../components/Select.astro";
 import { getAreasFlat } from "../../models/area";
 import { getUniversities } from "../../models/university";
-import { getResearchers } from "../../models/researcher";
+import { getResearcherByToken, getResearchers } from "../../models/researcher";
 import { queryNumber, queryString } from "../../lib/query";
+
+const token = Astro.cookies.get("token")?.value;
+let user: Awaited<ReturnType<typeof getResearcherByToken>> | undefined =
+  undefined;
+if (token) {
+  user = await getResearcherByToken(db, token);
+}
 
 const q = Astro.url.searchParams;
 
@@ -26,13 +33,13 @@ const areas = await getAreasFlat(db);
 <Default title="Pesquisadores">
   <main>
     <Container class="py-6">
-      <div class="flex justify-between">
+      <div class="flex justify-between h-[40px]">
         <h2 class="text-2xl font-bold">Pesquisadores</h2>
-        <div class="flex items-center">
+        <!-- <div class="flex items-center">
           <a href="/pesquisadores/criar" class="group">
             <Button><span class="text-xl leading-none">+</span>Criar</Button>
           </a>
-        </div>
+        </div> -->
       </div>
       <h3 class="text-lg font-bold">Filtros</h3>
       <form
@@ -83,53 +90,57 @@ const areas = await getAreasFlat(db);
     <Container id="results" class="flex flex-col items-center justify-center">
       <ul class="w-full max-w-2xl">
         {
-          researchers?.map((data) => (
+          researchers?.map((researcher) => (
             <li class="relative">
               <a
                 class="bg-white border border-gray-200 shadow-md rounded-lg block p-6 mb-4 reseacher-item"
-                href={`/pesquisadores/${data.id}`}
+                href={`/pesquisadores/${researcher.id}`}
               >
                 <div class="flex gap-4">
                   <img
-                    src={data.picture || "/pfp.png"}
-                    alt={`Foto de perfil de ${data.name}`}
+                    src={researcher.picture || "/pfp.png"}
+                    alt={`Foto de perfil de ${researcher.name}`}
                     class="w-12 h-12 rounded-full object-cover"
                   />
                   <div>
-                    <h3 class="text-xl font-semibold">{data.name}</h3>
+                    <h3 class="text-xl font-semibold">{researcher.name}</h3>
                     <div class="flex mb-4">
                       <h3 class="text-m font-semibold text-gray-600">
-                        {data.mainArea?.name}
+                        {researcher.mainArea?.name}
                       </h3>
                       <div class="mx-2">{"|"}</div>
                       <h3 class="text-m font-semibold text-gray-600">
-                        {data.university?.name}
+                        {researcher.university?.name}
                       </h3>
                     </div>
                   </div>
                 </div>
                 <div>
-                  <div class="text-sm text-gray-500">{data.contactInfo}</div>
-                  <div class="text-sm text-gray-500">{data.email}</div>
                   <div class="text-sm text-gray-500">
-                    {formatDate(data.dateOfBirth as string)}
+                    {researcher.contactInfo}
+                  </div>
+                  <div class="text-sm text-gray-500">{researcher.email}</div>
+                  <div class="text-sm text-gray-500">
+                    {formatDate(researcher.dateOfBirth as string)}
                   </div>
                 </div>
               </a>
-              <div class="absolute flex justify-end space-x-2 bottom-4 right-4">
-                <a
-                  class="group block"
-                  href={`/pesquisadores/${data.id}/editar`}
-                >
-                  <Button variant="outline">Editar</Button>
-                </a>
-                <a
-                  class="group block"
-                  href={`/pesquisadores/${data.id}/deletar`}
-                >
-                  <Button variant="destructive">Deletar</Button>
-                </a>
-              </div>
+              {user?.id === researcher.id && (
+                <div class="absolute flex justify-end space-x-2 bottom-4 right-4">
+                  <a
+                    class="group block"
+                    href={`/pesquisadores/${researcher.id}/editar`}
+                  >
+                    <Button variant="outline">Editar</Button>
+                  </a>
+                  <a
+                    class="group block"
+                    href={`/pesquisadores/${researcher.id}/deletar`}
+                  >
+                    <Button variant="destructive">Deletar</Button>
+                  </a>
+                </div>
+              )}
             </li>
           ))
         }

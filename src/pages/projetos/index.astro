@@ -8,7 +8,7 @@ import { getProjectStatus, formatDate } from "../../lib/dateFormatter";
 import Input from "../../components/Input.astro";
 import { queryNumber, queryString } from "../../lib/query";
 import { getProjects } from "../../models/project";
-import { getResearchers } from "../../models/researcher";
+import { getResearcherByToken, getResearchers } from "../../models/researcher";
 
 const q = Astro.url.searchParams;
 
@@ -19,18 +19,31 @@ const projects = await getProjects(db, {
   idCollaborator: queryNumber(q, "pesquisador"),
   status: queryString(q, "status") as "Concluído" | "Em andamento" | undefined,
 });
+
+const token = Astro.cookies.get("token")?.value;
+let user: Awaited<ReturnType<typeof getResearcherByToken>> | undefined =
+  undefined;
+if (token) {
+  user = await getResearcherByToken(db, token);
+}
 ---
 
 <Default title="Projetos">
   <main>
     <Container class="py-6">
-      <div class="flex justify-between">
+      <div class="flex justify-between h-[40px]">
         <h2 class="text-2xl font-bold">Projetos</h2>
-        <div class="flex items-center">
-          <a href="/projetos/criar" class="group">
-            <Button><span class="text-xl leading-none">+</span>Criar</Button>
-          </a>
-        </div>
+        {
+          user?.id && (
+            <div class="flex items-center">
+              <a href="/projetos/criar" class="group">
+                <Button>
+                  <span class="text-xl leading-none">+</span>Criar
+                </Button>
+              </a>
+            </div>
+          )
+        }
       </div>
       <h3 class="text-lg font-bold">Filtros</h3>
       <form
@@ -104,14 +117,22 @@ const projects = await getProjects(db, {
                   {project.description}
                 </p>
               </a>
-              <div class="absolute flex justify-end space-x-2 bottom-4 right-4">
-                <a class="group block" href={`/projetos/${project.id}/editar`}>
-                  <Button variant="outline">Editar</Button>
-                </a>
-                <a class="group block" href={`/projetos/${project.id}/deletar`}>
-                  <Button variant="destructive">Deletar</Button>
-                </a>
-              </div>
+              {user?.id === project.creatorId && (
+                <div class="absolute flex justify-end space-x-2 bottom-4 right-4">
+                  <a
+                    class="group block"
+                    href={`/projetos/${project.id}/editar`}
+                  >
+                    <Button variant="outline">Editar</Button>
+                  </a>
+                  <a
+                    class="group block"
+                    href={`/projetos/${project.id}/deletar`}
+                  >
+                    <Button variant="destructive">Deletar</Button>
+                  </a>
+                </div>
+              )}
             </li>
           ))
         }

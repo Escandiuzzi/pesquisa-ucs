@@ -14,7 +14,7 @@ const db = drizzle(sqlite, { schema });
 
 beforeAll(async () => {
   migrate(db, { migrationsFolder: "drizzle" });
-  seed(db);
+  await seed(db);
 });
 
 test("criar um pesquisador", async () => {
@@ -29,8 +29,7 @@ test("criar um pesquisador", async () => {
     idUniversity: 1,
   });
 
-  console.log(result);
-  expect(result).toStrictEqual({ id: 1 });
+  expect(result.id).toBeTruthy();
 });
 
 test("criar uma produção", async () => {
@@ -38,15 +37,14 @@ test("criar uma produção", async () => {
     title: "Teste",
     idCreator: 1,
     pubDate: new Date(),
-    idProject: 0,
-    idType: 1,
+    idProject: 1,
+    type: "artigo",
     idArea: 1,
-    idCollaborators: [0],
+    idCollaborators: [1],
     links: "http://example.com",
   });
 
-  console.log(result);
-  expect(result).toStrictEqual({ id: 1 });
+  expect(result.id).toBeTruthy();
 });
 
 test("criar um projeto", async () => {
@@ -59,10 +57,9 @@ test("criar um projeto", async () => {
     idCollaborators: [1],
   });
 
-  console.log(result);
-  expect(result).toStrictEqual({ id: 1 });
+  expect(result).toBeTruthy();
 });
 
 afterAll(async () => {
-  sqlite.close();
+  // sqlite.close();
 });

@@ -7,6 +7,9 @@ import {
 import bcrypt from "bcryptjs";
 import * as schema from "../db/schema";
 import { eq, inArray } from "drizzle-orm";
+import { nanoid } from "nanoid";
+import { deleteProduction } from "./production";
+import { deleteProject } from "./project";
 
 export async function createResearcher(
   db: BetterSQLite3Database<typeof schema>,
@@ -270,11 +273,89 @@ export async function deleteResearcher(
   db: BetterSQLite3Database<typeof schema>,
   id: number
 ) {
-  await db
-    .delete(researchersToAreas)
-    .where(eq(researchersToAreas.researcherId, id));
+  // Delete projects created by researcher
+  const projects = await db.query.projects.findMany({
+    where: eq(schema.projects.creatorId, id),
+  });
+  for (const project of projects) {
+    await deleteProject(db, project.id);
+  }
+
+  // Delete productions created by researcher
+  const productions = await db.query.productions.findMany({
+    where: eq(schema.productions.creatorId, id),
+  });
+  for (const production of productions) {
+    await deleteProduction(db, production.id);
+  }
+
+  // Remove researcher from having collaborated in projects and productions
   await db
     .delete(researchersToProjects)
     .where(eq(researchersToProjects.researcherId, id));
+  await db
+    .delete(schema.researchersToProductions)
+    .where(eq(schema.researchersToProductions.researcherId, id));
+
+  // Delete researcher
   await db.delete(researchers).where(eq(researchers.id, id));
+}
+
+export async function login(
+  db: BetterSQLite3Database<typeof schema>,
+  {
+    email,
+    password,
+  }: {
+    email: string;
+    password: string;
+  }
+) {
+  const researcher = await db.query.researchers.findFirst({
+    where: eq(researchers.email, email),
+  });
+
+  if (!researcher) {
+    return null;
+  }
+
+  if (!(await bcrypt.compare(password, researcher.passwordHash))) {
+    return null;
+  }
+
+  const [{ token }] = await db
+    .update(researchers)
+    .set({ token: nanoid() })
+    .where(eq(researchers.id, researcher.id))
+    .returning({ token: researchers.token });
+
+  return token;
+}
+
+export async function logout(
+  db: BetterSQLite3Database<typeof schema>,
+  token: string
+) {
+  await db
+    .update(researchers)
+    .set({ token: null })
+    .where(eq(researchers.token, token));
+}
+
+export async function getResearcherByToken(
+  db: BetterSQLite3Database<typeof schema>,
+  token: string
+) {
+  return await db.query.researchers.findFirst({
+    where: eq(researchers.token, token),
+    with: {
+      mainArea: true,
+      university: true,
+      areas: {
+        with: {
+          area: true,
+        },
+      },
+    },
+  });
 }

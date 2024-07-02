@@ -8,6 +8,7 @@ import Select from "../../../components/Select.astro";
 import Textarea from "../../../components/Textarea.astro";
 import { db } from "../../../db";
 import Default from "../../../layouts/Default.astro";
+import { getAreasFlat } from "../../../models/area";
 import {
   formDate,
   formNumber,
@@ -15,18 +16,23 @@ import {
   formString,
   stringToDate,
 } from "../../../lib/query";
-import { getProject } from "../../../models/project";
-import { createProject, updateProject } from "../../../models/project";
 import {
   getResearcherByToken,
   getResearchers,
 } from "../../../models/researcher";
+import { getProjects } from "../../../models/project";
+import {
+  getProduction,
+  getProductionTypeFromId,
+  type ProductionType,
+} from "../../../models/production";
+import { updateProduction } from "../../../models/production";
 
 const { id } = Astro.params;
-const projectId = parseInt(id as string);
-const currentProject = await getProject(db, projectId);
+const productionId = parseInt(id as string);
+const currentProduction = await getProduction(db, productionId);
 
-if (!currentProject) {
+if (!currentProduction) {
   Astro.response.status = 404;
   return;
 }
@@ -37,63 +43,59 @@ let user: Awaited<ReturnType<typeof getResearcherByToken>> | undefined =
 if (token) {
   user = await getResearcherByToken(db, token);
 }
-if (user?.id !== currentProject.creatorId) {
+if (user?.id !== currentProduction.creator.id) {
   return Astro.redirect(`/404`, 404);
 }
 
 const errors: Record<string, string> = {};
 let input: {
-  creator?: number;
   title?: string;
-  start_date?: Date;
-  end_date?: Date;
+  pub_date?: Date;
+  type?: ProductionType;
+  area?: number;
   collaborators?: number[];
-  description?: string;
+  links?: string | null;
+  project?: number;
 } = {
-  creator: currentProject.creatorId,
-  title: currentProject.title,
-  start_date: stringToDate(currentProject.startDate),
-  end_date: stringToDate(currentProject.endDate),
-  collaborators: currentProject.researchers.map((c) => c.researcherId),
-  description: currentProject.description || undefined,
+  title: currentProduction.title,
+  pub_date: stringToDate(currentProduction.pubDate),
+  type: getProductionTypeFromId(currentProduction.typeId),
+  area: currentProduction.area.id,
+  collaborators: currentProduction.researchers.map((c) => c.researcherId),
+  links: currentProduction.links,
+  project: currentProduction.project.id,
 };
 
 switch (Astro.request.method) {
   case "POST":
     const f = await Astro.request.formData();
     input = {
-      creator: formNumber(f, "creator"),
       title: formString(f, "title"),
-      start_date: formDate(f, "start_date"),
-      end_date: formDate(f, "end_date"),
+      pub_date: formDate(f, "pub_date"),
+      type: formString(f, "type") as ProductionType,
+      area: formNumber(f, "area"),
       collaborators: formNumberList(f, "collaborators[]"),
-      description: formString(f, "description"),
+      links: formString(f, "links"),
+      project: formNumber(f, "project"),
     };
 
-    if (
-      input.end_date &&
-      input.start_date &&
-      input.start_date > input.end_date
-    ) {
-      errors.end_date = "Data de término deve ser posterior à data de início.";
-      break;
-    }
-
     try {
-      await updateProject(db, projectId, {
+      await updateProduction(db, productionId, {
+        idArea: input.area,
+        idCollaborators: input.collaborators || [],
+        idProject: input.project,
+        links: input.links,
+        pubDate: input.pub_date,
         title: input.title,
-        startDate: input.start_date,
-        endDate: input.end_date,
-        idCollaborators: input.collaborators,
-        description: input.description,
+        type: input.type,
       });
 
-      return Astro.redirect(`/projetos/${projectId}`, 303);
+      return Astro.redirect(`/producoes/${id}`, 303);
     } catch (error) {
       console.error(error);
 
       errors.generic =
-        "Erro ao editar projeto! Confira os dados e tente novamente.";
+        "Erro ao criar produção! Confira os dados e tente novamente.";
     }
     break;
 
@@ -102,41 +104,84 @@ switch (Astro.request.method) {
 }
 
 const researchers = await getResearchers(db, {});
+const projects = await getProjects(db, {});
+const areas = await getAreasFlat(db);
 ---
 
-<Default title="Editar projeto">
+<Default title="Editar produção">
   <main>
     <Container class="py-6">
-      <Link href="/projetos" class="text-blue-600">&lt; Voltar</Link>
-      <h2 class="text-2xl font-bold">Editar projeto</h2>
+      <Link href="/producoes" class="text-blue-600">&lt; Voltar</Link>
+      <h2 class="text-2xl font-bold">Editar produção</h2>
       <form
         enctype="multipart/form-data"
         action=""
         method="post"
         class="max-w-lg mx-auto space-y-4"
       >
-        <Labelled name="title" label="Título">
-          <Input type="text" name="title" value={input.title} />
+        {errors.generic && <p class="text-red-600">{errors.generic}</p>}
+        <Labelled name="project" label="Projeto" required>
+          <Select name="project" required>
+            <option value=""
+              >Selecione o projeto a que essa produção pertence</option
+            >
+            {
+              projects.map((project) => (
+                <option
+                  value={project.id}
+                  selected={input.project === project.id}
+                >
+                  {project.title}
+                </option>
+              ))
+            }
+          </Select>
         </Labelled>
-        <Labelled name="start_date" label="Data de Início">
+        <hr />
+        <Labelled name="title" label="Título" required>
+          <Input type="text" name="title" required value={input.title} />
+        </Labelled>
+        <Labelled name="pub_date" label="Data de Publicação" required>
           <Input
             type="date"
-            name="start_date"
-            value={input.start_date?.toISOString().split("T")[0]}
+            name="pub_date"
+            required
+            value={input.pub_date?.toISOString().split("T")[0]}
           />
         </Labelled>
-        <Labelled name="end_date" label="Data de Término">
-          <Input
-            type="date"
-            name="end_date"
-            value={input.end_date?.toISOString().split("T")[0]}
-          />
-          {errors.end_date && <p class="text-red-600">{errors.end_date}</p>}
+        <Labelled name="type" label="Tipo" required>
+          <Select name="type" required>
+            <option value="">Selecione o tipo</option>
+            <option value="artigo" selected={input.type === "artigo"}
+              >Artigo</option
+            >
+            <option value="livro" selected={input.type === "livro"}
+              >Livro</option
+            >
+            <option value="patente" selected={input.type === "patente"}
+              >Patente</option
+            >
+            <option value="trabalho" selected={input.type === "trabalho"}
+              >Apresentação de trabalho</option
+            >
+          </Select>
+        </Labelled>
+        <Labelled name="area" label="Área de pesquisa" required>
+          <Select name="area" required>
+            <option value="">Selecione a área</option>
+            {
+              areas.map((area) => (
+                <option value={area.id} selected={input.area === area.id}>
+                  {area.name}
+                </option>
+              ))
+            }
+          </Select>
         </Labelled>
         <Labelled name="collaborators[]" label="Colaboradores">
           <template id="collab_template">
             <div class="flex gap-2 group/control">
-              <Select name="collaborators[]">
+              <Select name="collaborators[]" required>
                 <option value="">Selecione um pesquisador</option>
                 {
                   researchers.map((researcher) => (
@@ -157,7 +202,7 @@ const researchers = await getResearchers(db, {});
             {
               input.collaborators?.map((collabId) => (
                 <div class="flex gap-2 group/control">
-                  <Select name="collaborators[]">
+                  <Select name="collaborators[]" required>
                     <option value="">Selecione um pesquisador</option>
                     {researchers.map((researcher) => (
                       <option
@@ -193,8 +238,8 @@ const researchers = await getResearchers(db, {});
             <Button variant="outline" size="sm">+ Adicionar pesquisador</Button>
           </button>
         </Labelled>
-        <Labelled name="description" label="Descrição">
-          <Textarea rows="8" name="description" value={input.description} />
+        <Labelled name="links" label="Links">
+          <Textarea rows="8" name="links" value={input.links} />
         </Labelled>
 
         <button type="submit" class="group"><Button>Enviar</Button></button>

@@ -7,23 +7,28 @@ import { db } from "../../db";
 import { formatDate } from "../../lib/dateFormatter";
 import { getAreasFlat } from "../../models/area";
 import { getProductions, type ProductionType } from "../../models/production";
+import { queryNumber, queryString } from "../../lib/query";
+import Input from "../../components/Input.astro";
+import { getResearcherByToken, getResearchers } from "../../models/researcher";
 
-const method = Astro.request.method;
-const query = Astro.url.searchParams;
+const q = Astro.url.searchParams;
 
-const productions =
-  method === "GET"
-    ? await getProductions(db, {
-        q: query.get("q") || undefined,
-        idArea: query.get("area") ? Number(query.get("area")) : undefined,
-        idCreator: query.get("creator")
-          ? Number(query.get("creator"))
-          : undefined,
-        type: (query.get("type") as ProductionType) || undefined,
-      })
-    : undefined;
+const productions = await getProductions(db, {
+  q: queryString(q, "q"),
+  idArea: queryNumber(q, "area"),
+  idCollaborator: queryNumber(q, "pesquisador"),
+  type: (queryString(q, "tipo") as ProductionType) || undefined,
+});
 
-const areasList = await getAreasFlat(db);
+const areas = await getAreasFlat(db);
+const researchers = await getResearchers(db, {});
+
+const token = Astro.cookies.get("token")?.value;
+let user: Awaited<ReturnType<typeof getResearcherByToken>> | undefined =
+  undefined;
+if (token) {
+  user = await getResearcherByToken(db, token);
+}
 ---
 
 <Default title="Produções">
@@ -37,33 +42,81 @@ const areasList = await getAreasFlat(db);
           </a>
         </div>
       </div>
-    </Container>
-    <Container class="py-6">
-      <div class="flex">
-        <input
+      <h3 class="text-lg font-bold">Filtros</h3>
+      <form
+        hx-get="/producoes"
+        hx-target="#results"
+        hx-select="#results"
+        hx-swap="outerHTML"
+        hx-replace-url="true"
+        class="flex pt-2 gap-2 max-w-none"
+      >
+        <Input
           type="text"
-          id="search-input"
-          class="w-72 p-2 border rounded"
-          placeholder="Pesquise uma produção por título..."
+          name="q"
+          placeholder="Título"
+          value={queryString(q, "q")}
         />
-        <Select id="selector" name="area" class="w-28 ml-4">
-          <option value="">Todas</option>
+        <Select name="pesquisador">
+          <option value="">Selecione um pesquisador...</option>
           {
-            areasList.map((area) => (
-              <option value={area.id}>{area.name}</option>
+            researchers?.map((researcher) => (
+              <option
+                value={researcher.id}
+                selected={queryNumber(q, "pesquisador") === researcher.id}
+              >
+                {researcher.name}
+              </option>
             ))
           }
         </Select>
-      </div>
+        <Select name="area">
+          <option value="">Selecione uma área...</option>
+          {
+            areas?.map((area) => (
+              <option
+                value={area.id}
+                selected={queryNumber(q, "area") === area.id}
+              >
+                {area.name}
+              </option>
+            ))
+          }
+        </Select>
+        <Select name="tipo">
+          <option value="">Selecione um tipo...</option>
+          <option value="artigo" selected={queryString(q, "tipo") === "artigo"}>
+            Artigo
+          </option>
+          <option value="livro" selected={queryString(q, "tipo") === "livro"}>
+            Livro
+          </option>
+          <option
+            value="patente"
+            selected={queryString(q, "tipo") === "patente"}
+          >
+            Patente
+          </option>
+          <option
+            value="trabalho"
+            selected={queryString(q, "tipo") === "trabalho"}
+          >
+            Apresentação de trabalho
+          </option>
+        </Select>
+        <button type="submit" class="group block">
+          <Button size="sm" variant="outline">Buscar</Button>
+        </button>
+      </form>
     </Container>
-    <Container class="flex flex-col items-center justify-center">
+    <Container id="results" class="flex flex-col items-center justify-center">
       <ul class="w-full max-w-2xl space-y-4">
         {
           productions && productions.length > 0 ? (
             productions.map((production) => (
-              <div class="relative">
+              <li class="relative">
                 <a
-                  class="bg-white block shadow-md rounded-lg p-6 production-item pb-16"
+                  class="bg-white border border-gray-200 block shadow-md rounded-lg p-6 production-item pb-16"
                   href={`/producoes/${production.id}`}
                 >
                   <h3 class="text-xl font-semibold">{production.title}</h3>
@@ -73,24 +126,26 @@ const areasList = await getAreasFlat(db);
                     {formatDate(production.pubDate)}
                   </div>
                 </a>
-                <div class="absolute flex justify-end space-x-2 bottom-4 right-4">
-                  <a
-                    class="group block"
-                    href={`/projetos/${production.id}/edit`}
-                  >
-                    <Button variant="outline">Editar</Button>
-                  </a>
-                  <a
-                    class="group block"
-                    href={`/projetos/${production.id}/delete`}
-                  >
-                    <Button variant="destructive">Deletar</Button>
-                  </a>
-                </div>
-              </div>
+                {user?.id === production.creator.id && (
+                  <div class="absolute flex justify-end space-x-2 bottom-4 right-4">
+                    <a
+                      class="group block"
+                      href={`/producoes/${production.id}/editar`}
+                    >
+                      <Button variant="outline">Editar</Button>
+                    </a>
+                    <a
+                      class="group block"
+                      href={`/producoes/${production.id}/deletar`}
+                    >
+                      <Button variant="destructive">Deletar</Button>
+                    </a>
+                  </div>
+                )}
+              </li>
             ))
           ) : (
-            <p>Nenhuma produção encontrada.</p>
+            <p class="text-center">Sua busca não retornou nenhum resultado.</p>
           )
         }
       </ul>

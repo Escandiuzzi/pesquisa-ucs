@@ -5,14 +5,24 @@ import { and, eq, ilike } from "drizzle-orm";
 
 export type ProductionType = "artigo" | "livro" | "patente" | "trabalho";
 
-export function getProductionType(type: ProductionType): number {
+export function getProductionType(type: ProductionType) {
   const typeId = ["artigo", "livro", "patente", "trabalho"].indexOf(type);
 
   if (typeId === -1) {
-    throw new Error("Invalid production type");
+    return undefined;
   }
 
   return typeId;
+}
+
+export function getProductionTypeFromId(id: number) {
+  const type = ["artigo", "livro", "patente", "trabalho"][id];
+
+  if (type === undefined) {
+    return undefined;
+  }
+
+  return type as ProductionType;
 }
 
 export async function createProduction(
@@ -37,6 +47,11 @@ export async function createProduction(
     idCreator: number;
   }
 ) {
+  const prodType = getProductionType(type);
+  if (prodType === undefined) {
+    throw new Error("Invalid production type");
+  }
+
   const production = (
     await db
       .insert(productions)
@@ -52,7 +67,7 @@ export async function createProduction(
             (pubDate.getMonth() + 1) +
             "-" +
             pubDate.getDate(),
-          typeId: getProductionType(type),
+          typeId: prodType,
           creatorId: idCreator,
         },
       ])
@@ -74,16 +89,16 @@ export async function getProductions(
   {
     q,
     idArea,
-    idCreator,
+    idCollaborator,
     type,
   }: {
     q?: string;
     idArea?: number;
-    idCreator?: number;
+    idCollaborator?: number;
     type?: ProductionType;
   }
 ) {
-  const productions = await db.query.productions.findMany({
+  let productions = await db.query.productions.findMany({
     columns: {
       id: true,
       title: true,
@@ -95,15 +110,41 @@ export async function getProductions(
       area: true,
       creator: true,
       project: true,
-      researchers: true,
+      researchers: {
+        with: {
+          researcher: true,
+        },
+      },
     },
-    where: and(
-      q ? ilike(schema.productions.title, q) : undefined,
-      idArea ? eq(schema.productions.areaId, idArea) : undefined,
-      idCreator ? eq(schema.productions.creatorId, idCreator) : undefined,
-      type ? eq(schema.productions.typeId, getProductionType(type)) : undefined
-    ),
   });
+
+  if (q) {
+    productions = productions.filter((production) =>
+      production.title.toLowerCase().includes(q.toLowerCase())
+    );
+  }
+
+  if (idArea) {
+    productions = productions.filter(
+      (production) => production.area.id === idArea
+    );
+  }
+
+  if (type) {
+    productions = productions.filter(
+      (production) => production.typeId === getProductionType(type)
+    );
+  }
+
+  if (idCollaborator) {
+    productions = productions.filter(
+      (production) =>
+        production.creator.id === idCollaborator ||
+        production.researchers.some(
+          (researcher) => researcher.researcherId === idCollaborator
+        )
+    );
+  }
 
   return productions;
 }
@@ -124,10 +165,81 @@ export async function getProduction(
       area: true,
       creator: true,
       project: true,
-      researchers: true,
+      researchers: {
+        with: {
+          researcher: true,
+        },
+      },
     },
     where: eq(schema.productions.id, id),
   });
 
   return production;
+}
+
+export async function updateProduction(
+  db: BetterSQLite3Database<typeof schema>,
+  id: number,
+  {
+    title,
+    pubDate,
+    idArea,
+    idCollaborators,
+    idProject,
+    links,
+    type,
+  }: {
+    title?: string;
+    pubDate?: Date;
+    idArea?: number;
+    idCollaborators?: number[];
+    idProject?: number;
+    links?: string | null;
+    type?: ProductionType;
+  }
+) {
+  const prodType = type ? getProductionType(type) : undefined;
+  if (prodType === undefined) {
+    throw new Error("Invalid production type");
+  }
+  await db
+    .update(productions)
+    .set({
+      title,
+      areaId: idArea,
+      projectId: idProject,
+      links,
+      typeId: prodType,
+      pubDate: pubDate
+        ? pubDate.getFullYear() +
+          "-" +
+          (pubDate.getMonth() + 1) +
+          "-" +
+          pubDate.getDate()
+        : undefined,
+    })
+    .where(eq(productions.id, id));
+
+  if (idCollaborators) {
+    await db
+      .delete(researchersToProductions)
+      .where(eq(researchersToProductions.productionId, id));
+
+    await db.insert(researchersToProductions).values(
+      idCollaborators.map((rid) => ({
+        productionId: id,
+        researcherId: rid,
+      }))
+    );
+  }
+}
+
+export async function deleteProduction(
+  db: BetterSQLite3Database<typeof schema>,
+  id: number
+) {
+  await db
+    .delete(researchersToProductions)
+    .where(eq(researchersToProductions.productionId, id));
+  await db.delete(productions).where(eq(productions.id, id));
 }

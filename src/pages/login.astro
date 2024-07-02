@@ -1,0 +1,84 @@
+---
+import Button from "../components/Button.astro";
+import Container from "../components/Container.astro";
+import Input from "../components/Input.astro";
+import Labelled from "../components/Labelled.astro";
+import Link from "../components/Link.astro";
+import Select from "../components/Select.astro";
+import Textarea from "../components/Textarea.astro";
+import { db } from "../db";
+import Default from "../layouts/Default.astro";
+import { getAreasFlat } from "../models/area";
+import { getUniversities } from "../models/university";
+import { createResearcher, login } from "../models/researcher";
+import {
+  formString,
+  formFile,
+  formNumber,
+  formNumberList,
+  formDate,
+} from "../lib/query";
+import { uploadImage } from "../lib/upload";
+
+const errors: Record<string, string> = {};
+let input: {
+  email?: string;
+  password?: string;
+} = {};
+
+switch (Astro.request.method) {
+  case "POST":
+    const f = await Astro.request.formData();
+    input = {
+      email: formString(f, "email"),
+      password: formString(f, "password"),
+    };
+
+    if (input.email === undefined || input.password === undefined) {
+      errors.generic = "Preencha todos os campos obrigatórios.";
+      break;
+    }
+
+    const token = await login(db, {
+      email: input.email,
+      password: input.password,
+    });
+
+    if (token === null) {
+      errors.generic = "Email ou senha incorretos.";
+      break;
+    }
+
+    Astro.cookies.set("token", token, { path: "/", maxAge: 60 * 60 * 24 * 7 });
+
+    return Astro.redirect("/", 303);
+    break;
+
+  default:
+    break;
+}
+---
+
+<Default title="Login">
+  <main>
+    <Container class="py-6">
+      <h2 class="text-2xl font-bold">Faça login</h2>
+      <form
+        enctype="multipart/form-data"
+        action=""
+        method="post"
+        class="max-w-lg mx-auto space-y-4"
+      >
+        {errors.generic && <p class="text-red-600">{errors.generic}</p>}
+        <Labelled name="email" label="Email" required>
+          <Input type="email" name="email" required value={input.email} />
+        </Labelled>
+        <Labelled name="password" label="Senha" required>
+          <Input type="password" name="password" required />
+        </Labelled>
+
+        <button type="submit" class="group"><Button>Entrar</Button></button>
+      </form>
+    </Container>
+  </main>
+</Default>

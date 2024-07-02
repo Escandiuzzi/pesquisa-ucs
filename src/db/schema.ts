@@ -37,6 +37,7 @@ export const researchers = sqliteTable("researchers", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   email: text("email").unique().notNull(),
   passwordHash: text("password_hash").notNull(),
+  token: text("token"),
 
   name: text("name").notNull(),
   picture: text("picture"),

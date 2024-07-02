@@ -1,0 +1,68 @@
+---
+import Container from "../../../components/Container.astro";
+import Default from "../../../layouts/Default.astro";
+import { db } from "../../../db";
+import { formatDate, getProjectStatus } from "../../../lib/dateFormatter";
+import Link from "../../../components/Link.astro";
+import Button from "../../../components/Button.astro";
+import { deleteProduction, getProduction } from "../../../models/production";
+import { getResearcherByToken } from "../../../models/researcher";
+
+const { id } = Astro.params;
+
+const production = await getProduction(db, parseInt(id as string));
+
+if (!production) {
+  Astro.response.status = 404;
+  return;
+}
+
+const token = Astro.cookies.get("token")?.value;
+let user: Awaited<ReturnType<typeof getResearcherByToken>> | undefined =
+  undefined;
+if (token) {
+  user = await getResearcherByToken(db, token);
+}
+if (user?.id !== production.creator.id) {
+  return Astro.redirect(`/404`, 404);
+}
+
+if (Astro.request.method === "POST") {
+  await deleteProduction(db, parseInt(id as string));
+  return Astro.redirect("/producoes", 303);
+}
+---
+
+<Default title="Deletar produção">
+  <main>
+    <Container class="py-6">
+      <Link href={`/producoes/${id}`} class="text-blue-600">&lt; Voltar</Link>
+      <div class="flex justify-between">
+        <h2 class="text-2xl font-bold mb-4">Deletar produção</h2>
+      </div>
+      <div
+        class="bg-white border border-gray-200 block shadow-md rounded-lg p-6 production-item"
+      >
+        <h3 class="text-xl font-semibold">{production.title}</h3>
+        <h3 class="text-l font-normal">{production.project.title}</h3>
+        <h3 class="text-l mt-3">{production.area.name}</h3>
+        <div class="flex text-sm font-bold text-gray-600 justify-end">
+          {formatDate(production.pubDate)}
+        </div>
+      </div>
+      <p class="text-4xl font-bold text-red-700 text-center mt-6 mb-12 block">
+        Tem certeza que deseja deletar esta produção?
+      </p>
+      <div class="flex gap-8 justify-center">
+        <a href={`/producoes/${id}`} class="group">
+          <Button variant="outline">Não! Cancelar!</Button>
+        </a>
+        <form action="" method="post">
+          <button class="group">
+            <Button variant="destructive">Sim! Deletar!</Button>
+          </button>
+        </form>
+      </div>
+    </Container>
+  </main>
+</Default>

@@ -3,6 +3,7 @@ import { projects, researchersToProjects } from "../db/schema";
 import * as schema from "../db/schema";
 import { eq } from "drizzle-orm";
 import { getProjectStatus } from "../lib/dateFormatter";
+import { deleteProduction } from "./production";
 
 export async function createProject(
   db: BetterSQLite3Database<typeof schema>,
@@ -213,12 +214,7 @@ export async function deleteProject(
     .from(schema.productions)
     .where(eq(schema.productions.projectId, id));
   productions.forEach(async (production) => {
-    await db
-      .delete(schema.researchersToProductions)
-      .where(eq(schema.researchersToProductions.productionId, production.id));
+    await deleteProduction(db, production.id);
   });
-  await db
-    .delete(schema.productions)
-    .where(eq(schema.productions.projectId, id));
   await db.delete(projects).where(eq(projects.id, id));
 }
