@@ -9,51 +9,150 @@ import Textarea from "../../../components/Textarea.astro";
 import { db } from "../../../db";
 import Default from "../../../layouts/Default.astro";
 import { getAreasFlat } from "../../../models/area";
-import { getResearcher } from "../../../models/researcher";
 import { getUniversities } from "../../../models/university";
+import { getResearcher, updateResearcher } from "../../../models/researcher";
+import {
+  formString,
+  formFile,
+  formNumber,
+  formNumberList,
+  formDate,
+  stringToDate,
+} from "../../../lib/query";
+import { replaceImage } from "../../../lib/upload";
 
 const { id } = Astro.params;
-const researcher = await getResearcher(db, parseInt(id as string));
-!researcher && (Astro.response.status = 404);
+const researcherId = parseInt(id as string);
+const currentResearcher = await getResearcher(db, researcherId);
+
+if (!currentResearcher) {
+  Astro.response.status = 404;
+  return;
+}
+
+const errors: Record<string, string> = {};
+let input: {
+  email?: string;
+  password?: string;
+  password_confirm?: string;
+  name?: string;
+  picture?: File;
+  university?: number;
+  main_area?: number;
+  areas?: number[];
+  dob?: Date;
+  contact_info?: string;
+} = {
+  email: currentResearcher?.email,
+  name: currentResearcher?.name,
+  university: currentResearcher?.universityId,
+  main_area: currentResearcher?.mainAreaId,
+  areas: currentResearcher?.areas?.map((a) => a.areaId),
+  dob: stringToDate(currentResearcher?.dateOfBirth),
+  contact_info: currentResearcher?.contactInfo || undefined,
+};
+
+switch (Astro.request.method) {
+  case "POST":
+    const f = await Astro.request.formData();
+    input = {
+      email: formString(f, "email"),
+      password: formString(f, "password"),
+      password_confirm: formString(f, "password_confirm"),
+      name: formString(f, "name"),
+      picture: formFile(f, "picture"),
+      university: formNumber(f, "university"),
+      main_area: formNumber(f, "main_area"),
+      areas: formNumberList(f, "areas[]"),
+      dob: formDate(f, "dob"),
+      contact_info: formString(f, "contact_info"),
+    };
+
+    if (input.password && input.password !== input.password_confirm) {
+      errors.password = "As senhas não coincidem.";
+      break;
+    }
+
+    let pictureUrl = undefined;
+
+    if (input.picture) {
+      if (!["image/jpeg", "image/png"].includes(input.picture.type)) {
+        errors.picture =
+          "Formato de imagem inválido. Apenas JPEG e PNG são aceitos.";
+        break;
+      }
+
+      // Upload file
+      const filename = await replaceImage(
+        "public/uploads",
+        currentResearcher?.picture?.split("/").pop(),
+        input.picture
+      );
+      pictureUrl = `/uploads/${filename}`;
+    }
+
+    try {
+      const pesquisador = await updateResearcher(db, researcherId, {
+        email: input.email,
+        password: input.password,
+
+        name: input.name,
+        pictureUrl,
+        idAreas: input.areas || [],
+        idMainArea: input.main_area,
+        idUniversity: input.university,
+        dateOfBirth: input.dob,
+        contactInfo: input.contact_info,
+      });
+
+      return Astro.redirect(`/pesquisadores/${pesquisador.id}`, 303);
+    } catch (error) {
+      console.error(error);
+
+      errors.generic =
+        "Erro ao editar pesquisador! Confira os dados e tente novamente.";
+    }
+    break;
+
+  default:
+    break;
+}
 
 const universityEntries = await getUniversities(db);
 const areas = await getAreasFlat(db);
 ---
 
-<style>
-  form.htmx-request {
-    @apply animate-pulse opacity-75 cursor-progress;
-  }
-
-  form.htmx-request * {
-    @apply pointer-events-none;
-  }
-</style>
-
 <Default title="Editar pesquisador">
   <main>
     <Container class="py-6">
-      <Link href="/pesquisadores" class="text-blue-600">&lt; Voltar</Link>
+      <Link href={`/pesquisadores/${id}`} class="text-blue-600"
+        >&lt; Voltar</Link
+      >
       <h2 class="text-2xl font-bold">Editar pesquisador</h2>
       <form
         enctype="multipart/form-data"
+        action=""
+        method="post"
         class="max-w-lg mx-auto space-y-4"
-        hx-target="#form_message"
-        hx-swap="innerHTML"
-        hx-put="/pesquisadores/api"
       >
-        <Labelled name="password" label="Nova senha">
+        {errors.generic && <p class="text-red-600">{errors.generic}</p>}
+        <Labelled name="email" label="Email">
+          <Input type="email" name="email" value={input.email} />
+        </Labelled>
+        <Labelled name="password" label="Senha">
           <Input type="password" name="password" />
         </Labelled>
-        <Labelled name="password_confirm" label="Confirmar nova senha">
+        <Labelled name="password_confirm" label="Confirmar senha">
           <Input type="password" name="password_confirm" />
+          {errors.password && <p class="text-red-600">{errors.password}</p>}
         </Labelled>
         <hr />
         <Labelled name="name" label="Nome">
-          <Input type="text" name="name" value={researcher?.name} />
+          <Input type="text" name="name" value={input.name} />
         </Labelled>
         <Labelled name="picture" label="Foto de perfil">
           <Input type="file" name="picture" accept="image/jpeg,image/png" />
+          {errors.picture && <p class="text-red-600">{errors.picture}</p>}
         </Labelled>
         <Labelled name="university" label="Universidade">
           <Select name="university">
@@ -62,7 +161,7 @@ const areas = await getAreasFlat(db);
               universityEntries.map((university) => (
                 <option
                   value={university.id}
-                  selected={researcher?.universityId === university.id}
+                  selected={input.university === university.id}
                 >
                   {university.name}
                 </option>
@@ -75,10 +174,7 @@ const areas = await getAreasFlat(db);
             <option value="">Selecione a área principal</option>
             {
               areas.map((area) => (
-                <option
-                  value={area.id}
-                  selected={researcher?.mainAreaId === area.id}
-                >
+                <option value={area.id} selected={input.main_area === area.id}>
                   {area.name}
                 </option>
               ))
@@ -107,14 +203,14 @@ const areas = await getAreasFlat(db);
           </template>
           <div id="area_list" class="space-y-2">
             {
-              researcher?.areas?.map((area) => (
+              input.areas?.map((areaId) => (
                 <div class="flex gap-2 group/control">
                   <Select name="areas[]">
                     <option value="">Selecione uma área</option>
                     {areas.map((innerArea) => (
                       <option
                         value={innerArea.id}
-                        selected={innerArea.id === area.areaId}
+                        selected={innerArea.id === areaId}
                       >
                         {innerArea.name}
                       </option>
@@ -149,23 +245,15 @@ const areas = await getAreasFlat(db);
           <Input
             type="date"
             name="dob"
-            value={researcher?.dateOfBirth
-              ?.split("-")
-              .map((n) => n.padStart(2, "0"))
-              .join("-")}
+            value={input.dob?.toISOString().split("T")[0]}
           />
         </Labelled>
         <Labelled name="contact_info" label="Informações de contato">
-          <Textarea
-            rows="8"
-            name="contact_info"
-            value={researcher?.contactInfo}
-          />
+          <Textarea rows="8" name="contact_info" value={input.contact_info} />
         </Labelled>
 
         <button type="submit" class="group"><Button>Enviar</Button></button>
       </form>
-      <div id="form_message"></div>
     </Container>
   </main>
 </Default>

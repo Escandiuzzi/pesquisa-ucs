@@ -17,11 +17,11 @@ export async function seed(db: BetterSQLite3Database<any>) {
   await db.delete(researchersToProjects);
   await db.delete(researchersToProductions);
   await db.delete(researchersToAreas);
+  await db.delete(projects);
+  await db.delete(productions);
   await db.delete(researchers);
   await db.delete(areas);
-  await db.delete(productions);
   await db.delete(universities);
-  await db.delete(projects);
 
   const [compsci, maths, biology, philosophy] = await db
     .insert(areas)
@@ -134,6 +134,7 @@ export async function seed(db: BetterSQLite3Database<any>) {
       description: "Projeto de Geometria para cálculo de áreas",
       creatorId: barbara.id,
       startDate: new Date(2022, 0, 1),
+      endDate: new Date(2023, 4, 1),
       idCollaborators: [joao.id, barbara.id],
     }),
     createProject(db, {
@@ -141,6 +142,7 @@ export async function seed(db: BetterSQLite3Database<any>) {
       description: "Projeto de Botânica para estudo de plantas",
       creatorId: heitor.id,
       startDate: new Date(2023, 0, 1),
+      endDate: new Date(2024, 4, 1),
       idCollaborators: [heitor.id, julia.id],
     }),
     createProject(db, {
@@ -159,7 +161,7 @@ export async function seed(db: BetterSQLite3Database<any>) {
       idCollaborators: [joao.id, barbara.id],
       idCreator: joao.id,
       idProject: projAi.id,
-      idType: "artigo",
+      type: "artigo",
       links: "https://www.artigo.com",
       pubDate: new Date(2021, 0, 1),
     }),
@@ -169,7 +171,7 @@ export async function seed(db: BetterSQLite3Database<any>) {
       idCollaborators: [joao.id, barbara.id],
       idCreator: barbara.id,
       idProject: projGeometry.id,
-      idType: "livro",
+      type: "livro",
       links: "https://www.livro.com",
       pubDate: new Date(2022, 0, 1),
     }),
@@ -179,7 +181,7 @@ export async function seed(db: BetterSQLite3Database<any>) {
       idCollaborators: [heitor.id, julia.id],
       idCreator: heitor.id,
       idProject: projBotanics.id,
-      idType: "artigo",
+      type: "artigo",
       links: "https://www.artigo.com",
       pubDate: new Date(2023, 0, 1),
     }),
@@ -189,7 +191,7 @@ export async function seed(db: BetterSQLite3Database<any>) {
       idCollaborators: [heitor.id, julia.id],
       idCreator: julia.id,
       idProject: projEthics.id,
-      idType: "livro",
+      type: "livro",
       links: "https://www.livro.com",
       pubDate: new Date(2024, 0, 1),
     }),
@@ -199,7 +201,7 @@ export async function seed(db: BetterSQLite3Database<any>) {
       idCollaborators: [joao.id, barbara.id],
       idCreator: joao.id,
       idProject: projAi.id,
-      idType: "patente",
+      type: "patente",
       links: "https://www.patente.com",
       pubDate: new Date(2021, 0, 1),
     }),
@@ -209,7 +211,7 @@ export async function seed(db: BetterSQLite3Database<any>) {
       idCollaborators: [joao.id, barbara.id],
       idCreator: barbara.id,
       idProject: projGeometry.id,
-      idType: "trabalho",
+      type: "trabalho",
       links: "https://www.trabalho.com",
       pubDate: new Date(2022, 0, 1),
     }),
@@ -219,7 +221,7 @@ export async function seed(db: BetterSQLite3Database<any>) {
       idCollaborators: [heitor.id, julia.id],
       idCreator: heitor.id,
       idProject: projBotanics.id,
-      idType: "patente",
+      type: "patente",
       links: "https://www.patente.com",
       pubDate: new Date(2023, 0, 1),
     }),
@@ -229,7 +231,7 @@ export async function seed(db: BetterSQLite3Database<any>) {
       idCollaborators: [heitor.id, julia.id],
       idCreator: julia.id,
       idProject: projEthics.id,
-      idType: "trabalho",
+      type: "trabalho",
       links: "https://www.trabalho.com",
       pubDate: new Date(2024, 0, 1),
     }),

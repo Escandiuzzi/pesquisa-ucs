@@ -3,34 +3,24 @@ import Button from "../../components/Button.astro";
 import Container from "../../components/Container.astro";
 import Default from "../../layouts/Default.astro";
 import { db } from "../../db";
-import { formatDate } from "../../lib/dateFormater";
+import { formatDate } from "../../lib/dateFormatter";
 import Input from "../../components/Input.astro";
 import Select from "../../components/Select.astro";
 import { getAreasFlat } from "../../models/area";
 import { getUniversities } from "../../models/university";
 import { getResearchers } from "../../models/researcher";
+import { queryNumber, queryString } from "../../lib/query";
 
-const method = Astro.request.method;
-const queryString = (key: string) => {
-  const value = Astro.url.searchParams.get(key);
-  return value !== undefined && value !== null && value !== ""
-    ? value
-    : undefined;
-};
-const queryNumber = (key: string) =>
-  queryString(key) !== undefined ? Number(queryString(key)) : undefined;
+const q = Astro.url.searchParams;
 
-const researchers =
-  method === "GET"
-    ? await getResearchers(db, {
-        q: queryString("q"),
-        area: queryNumber("area"),
-        university: queryNumber("universidade"),
-      })
-    : undefined;
+const researchers = await getResearchers(db, {
+  q: queryString(q, "q"),
+  area: queryNumber(q, "area"),
+  university: queryNumber(q, "universidade"),
+});
 
-const universities = method === "GET" ? await getUniversities(db) : undefined;
-const areas = method === "GET" ? await getAreasFlat(db) : undefined;
+const universities = await getUniversities(db);
+const areas = await getAreasFlat(db);
 ---
 
 <Default title="Pesquisadores">
@@ -57,7 +47,7 @@ const areas = method === "GET" ? await getAreasFlat(db) : undefined;
           type="text"
           name="q"
           placeholder="Nome"
-          value={queryString("q")}
+          value={queryString(q, "q")}
         />
         <Select name="universidade">
           <option value="">Selecione uma universidade...</option>
@@ -65,7 +55,7 @@ const areas = method === "GET" ? await getAreasFlat(db) : undefined;
             universities?.map((university) => (
               <option
                 value={university.id}
-                selected={queryNumber("universidade") === university.id}
+                selected={queryNumber(q, "universidade") === university.id}
               >
                 {university.name}
               </option>
@@ -78,7 +68,7 @@ const areas = method === "GET" ? await getAreasFlat(db) : undefined;
             areas?.map((area) => (
               <option
                 value={area.id}
-                selected={queryNumber("area") === area.id}
+                selected={queryNumber(q, "area") === area.id}
               >
                 {area.name}
               </option>
@@ -133,12 +123,20 @@ const areas = method === "GET" ? await getAreasFlat(db) : undefined;
                 >
                   <Button variant="outline">Editar</Button>
                 </a>
-                <a class="group block" href={`/projetos/${data.id}/deletar`}>
+                <a
+                  class="group block"
+                  href={`/pesquisadores/${data.id}/deletar`}
+                >
                   <Button variant="destructive">Deletar</Button>
                 </a>
               </div>
             </li>
           ))
+        }
+        {
+          researchers.length === 0 && (
+            <p class="text-center">Sua busca não retornou resultados!</p>
+          )
         }
       </ul>
     </Container>

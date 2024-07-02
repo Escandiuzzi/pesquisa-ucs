@@ -1,21 +1,32 @@
 ---
-import Button from "../../components/Button.astro";
-import Container from "../../components/Container.astro";
-import Input from "../../components/Input.astro";
-import Labelled from "../../components/Labelled.astro";
-import Link from "../../components/Link.astro";
-import Select from "../../components/Select.astro";
-import Textarea from "../../components/Textarea.astro";
-import { db } from "../../db";
-import Default from "../../layouts/Default.astro";
+import Button from "../../../components/Button.astro";
+import Container from "../../../components/Container.astro";
+import Input from "../../../components/Input.astro";
+import Labelled from "../../../components/Labelled.astro";
+import Link from "../../../components/Link.astro";
+import Select from "../../../components/Select.astro";
+import Textarea from "../../../components/Textarea.astro";
+import { db } from "../../../db";
+import Default from "../../../layouts/Default.astro";
 import {
   formDate,
   formNumber,
   formNumberList,
   formString,
-} from "../../lib/query";
-import { createProject } from "../../models/project";
-import { getResearchers } from "../../models/researcher";
+  stringToDate,
+} from "../../../lib/query";
+import { getProject } from "../../../models/project";
+import { createProject, updateProject } from "../../../models/project";
+import { getResearchers } from "../../../models/researcher";
+
+const { id } = Astro.params;
+const projectId = parseInt(id as string);
+const currentProject = await getProject(db, projectId);
+
+if (!currentProject) {
+  Astro.response.status = 404;
+  return;
+}
 
 const errors: Record<string, string> = {};
 let input: {
@@ -25,7 +36,14 @@ let input: {
   end_date?: Date;
   collaborators?: number[];
   description?: string;
-} = {};
+} = {
+  creator: currentProject.creatorId,
+  title: currentProject.title,
+  start_date: stringToDate(currentProject.startDate),
+  end_date: stringToDate(currentProject.endDate),
+  collaborators: currentProject.researchers.map((c) => c.researcherId),
+  description: currentProject.description || undefined,
+};
 
 switch (Astro.request.method) {
   case "POST":
@@ -39,19 +57,17 @@ switch (Astro.request.method) {
       description: formString(f, "description"),
     };
 
-    if (!input.creator || !input.title || !input.start_date) {
-      errors.generic = "Preencha todos os campos obrigatórios.";
-      break;
-    }
-
-    if (input.end_date && input.start_date > input.end_date) {
+    if (
+      input.end_date &&
+      input.start_date &&
+      input.start_date > input.end_date
+    ) {
       errors.end_date = "Data de término deve ser posterior à data de início.";
       break;
     }
 
     try {
-      const projeto = await createProject(db, {
-        creatorId: input.creator,
+      await updateProject(db, projectId, {
         title: input.title,
         startDate: input.start_date,
         endDate: input.end_date,
@@ -59,12 +75,12 @@ switch (Astro.request.method) {
         description: input.description,
       });
 
-      return Astro.redirect(`/projetos/${projeto.id}`, 303);
+      return Astro.redirect(`/projetos/${projectId}`, 303);
     } catch (error) {
       console.error(error);
 
       errors.generic =
-        "Erro ao criar projeto! Confira os dados e tente novamente.";
+        "Erro ao editar projeto! Confira os dados e tente novamente.";
     }
     break;
 
@@ -75,41 +91,24 @@ switch (Astro.request.method) {
 const researchers = await getResearchers(db, {});
 ---
 
-<Default title="Criar projeto">
+<Default title="Editar projeto">
   <main>
     <Container class="py-6">
       <Link href="/projetos" class="text-blue-600">&lt; Voltar</Link>
-      <h2 class="text-2xl font-bold">Criar projeto</h2>
+      <h2 class="text-2xl font-bold">Editar projeto</h2>
       <form
         enctype="multipart/form-data"
         action=""
         method="post"
         class="max-w-lg mx-auto space-y-4"
       >
-        <Labelled name="creator" label="Criador" required>
-          <Select name="creator" required>
-            <option value="">Selecione um pesquisador</option>
-            {
-              researchers.map((researcher) => (
-                <option
-                  value={researcher.id}
-                  selected={input.creator === researcher.id}
-                >
-                  {researcher.name}
-                </option>
-              ))
-            }
-          </Select>
+        <Labelled name="title" label="Título">
+          <Input type="text" name="title" value={input.title} />
         </Labelled>
-        <hr />
-        <Labelled name="title" label="Título" required>
-          <Input type="text" name="title" required value={input.title} />
-        </Labelled>
-        <Labelled name="start_date" label="Data de Início" required>
+        <Labelled name="start_date" label="Data de Início">
           <Input
             type="date"
             name="start_date"
-            required
             value={input.start_date?.toISOString().split("T")[0]}
           />
         </Labelled>
@@ -124,7 +123,7 @@ const researchers = await getResearchers(db, {});
         <Labelled name="collaborators[]" label="Colaboradores">
           <template id="collab_template">
             <div class="flex gap-2 group/control">
-              <Select name="collaborators[]" required>
+              <Select name="collaborators[]">
                 <option value="">Selecione um pesquisador</option>
                 {
                   researchers.map((researcher) => (
@@ -145,7 +144,7 @@ const researchers = await getResearchers(db, {});
             {
               input.collaborators?.map((collabId) => (
                 <div class="flex gap-2 group/control">
-                  <Select name="collaborators[]" required>
+                  <Select name="collaborators[]">
                     <option value="">Selecione um pesquisador</option>
                     {researchers.map((researcher) => (
                       <option

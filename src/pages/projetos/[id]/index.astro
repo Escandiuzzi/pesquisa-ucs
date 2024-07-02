@@ -1,0 +1,101 @@
+---
+import Container from "../../../components/Container.astro";
+import Default from "../../../layouts/Default.astro";
+import { db } from "../../../db";
+import { formatDate, getProjectStatus } from "../../../lib/dateFormatter";
+import Link from "../../../components/Link.astro";
+import Button from "../../../components/Button.astro";
+import { getProject } from "../../../models/project";
+
+const { id } = Astro.params;
+
+const project = await getProject(db, parseInt(id as string));
+
+if (!project) {
+  Astro.response.status = 404;
+  return;
+}
+---
+
+<Default title={project.title}>
+  <main>
+    <Container class="py-6">
+      <Link href="/projetos" class="text-blue-600">&lt; Voltar</Link>
+      <div class="flex justify-between">
+        <h2 class="text-2xl font-bold mb-4">Projeto</h2>
+        <div class="flex space-x-2">
+          <a class="group block" href={`/projetos/${id}/editar`}>
+            <Button variant="outline" size="sm">Editar</Button>
+          </a>
+          <a class="group block" href={`/projetos/${id}/deletar`}>
+            <Button variant="destructive" size="sm">Deletar</Button>
+          </a>
+        </div>
+      </div>
+      <div
+        class="bg-white shadow-md border border-gray-200 rounded-lg p-6 mb-4 text-sm text-gray-600"
+      >
+        <h3 class="text-xl font-semibold mb-2 text-black">{project.title}</h3>
+        <p class="mb-2">
+          <strong>Data de início:</strong>
+          {formatDate(project.startDate)}
+        </p>
+        <p class="mb-2">
+          <strong>Data de término:</strong>
+          {project.endDate ? formatDate(project.endDate) : "Indeterminado"}
+        </p>
+        <p class="mb-2">
+          <strong>Status:</strong>
+          <span
+            class={`${getProjectStatus(project.endDate) === "Concluído" ? "text-green-600" : "text-orange-600"}`}
+          >
+            {getProjectStatus(project.endDate)}
+          </span>
+        </p>
+        <p class="mb-2">
+          <strong>Descrição:</strong><br /><span class="whitespace-pre-line"
+            >{project.description}</span
+          >
+        </p>
+        <h3 class="text-xl font-semibold mt-6 text-black mb-2">
+          Colaboradores
+        </h3>
+        <Link
+          class="font-bold block mb-2"
+          href={`/pesquisadores/${project.creator.id}`}
+        >
+          {project.creator.name}
+        </Link>
+        {
+          project.researchers.length > 0 ? (
+            project.researchers.map((researcher) => (
+              <Link
+                class="font-bold block mb-2"
+                href={`/pesquisadores/${researcher.researcher.id}`}
+              >
+                {researcher.researcher.name}
+              </Link>
+            ))
+          ) : (
+            <p>Nenhum!</p>
+          )
+        }
+        <h3 class="text-xl font-semibold mt-6 mb-2 text-black">Produções</h3>
+        {
+          project.productions.length > 0 ? (
+            project.productions.map((production) => (
+              <Link
+                class="font-bold block mb-2"
+                href={`/producoes/${production.id}`}
+              >
+                {production.title}
+              </Link>
+            ))
+          ) : (
+            <p>Nenhum!</p>
+          )
+        }
+      </div>
+    </Container>
+  </main>
+</Default>

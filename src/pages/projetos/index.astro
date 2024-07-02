@@ -4,10 +4,21 @@ import Container from "../../components/Container.astro";
 import Default from "../../layouts/Default.astro";
 import Select from "../../components/Select.astro";
 import { db } from "../../db";
-import { projects } from "../../db/schema";
-import { getProjectStatus, formatDate } from "../../lib/dateFormater";
+import { getProjectStatus, formatDate } from "../../lib/dateFormatter";
+import Input from "../../components/Input.astro";
+import { queryNumber, queryString } from "../../lib/query";
+import { getProjects } from "../../models/project";
+import { getResearchers } from "../../models/researcher";
 
-const projectsEntries = await db.select().from(projects);
+const q = Astro.url.searchParams;
+
+const researchers = await getResearchers(db, {});
+
+const projects = await getProjects(db, {
+  q: queryString(q, "q"),
+  idCollaborator: queryNumber(q, "pesquisador"),
+  status: queryString(q, "status") as "Concluído" | "Em andamento" | undefined,
+});
 ---
 
 <Default title="Projetos">
@@ -21,95 +32,105 @@ const projectsEntries = await db.select().from(projects);
           </a>
         </div>
       </div>
-    </Container>
-    <Container class="py-6">
-      <div class="flex">
-        <input
+      <h3 class="text-lg font-bold">Filtros</h3>
+      <form
+        hx-get="/projetos"
+        hx-target="#results"
+        hx-select="#results"
+        hx-swap="outerHTML"
+        hx-replace-url="true"
+        class="flex pt-2 gap-2 max-w-none"
+      >
+        <Input
           type="text"
-          id="search-input"
-          class="w-72 p-2 border rounded"
-          placeholder="Pesquise um projeto por título..."
+          name="q"
+          placeholder="Título"
+          value={queryString(q, "q")}
         />
-        <Select id="selector" class="w-28 ml-4">
-          <option value="">Todos</option>
-          <option value="Concluído">Concluído</option>
-          <option value="Em andamento">Em andamento</option>
-        </Select>
-      </div>
-    </Container>
-    <Container class="flex flex-col items-center justify-center">
-      <ul id="projects-list" class="w-full max-w-2xl">
-        {
-          projectsEntries.map((project) => (
-            <li
-              class="bg-white shadow-md rounded-lg p-6 mb-4 relative project-item"
-              data-title={project?.title?.toLowerCase()}
-              project-status={getProjectStatus(project.endDate as string)}
-              onclick={`window.location.href='/projetos/${project.id}'`}
-            >
-              <h3 class="text-xl font-semibold">{project.title}</h3>
-              <div
-                class="flex text-sm text-gray-600"
-                data-end-date={project.endDate}
+        <Select name="pesquisador">
+          <option value="">Selecione um pesquisador...</option>
+          {
+            researchers?.map((researcher) => (
+              <option
+                value={researcher.id}
+                selected={queryNumber(q, "pesquisador") === researcher.id}
               >
-                {formatDate(project.startDate as string)} -{" "}
-                {formatDate(project.endDate as string)}
-                <div class="ml-4 font-bold">
-                  {getProjectStatus(project.endDate as string)}
-                </div>
-              </div>
-              <p class="mt-2">{project.description}</p>
-              <div class="mt-4 flex justify-end space-x-2">
-                <button
-                  class="bg-yellow-500 text-white py-2 px-4 rounded hover:bg-yellow-600 focus:outline-none"
-                  onclick={`window.location.href='/projetos/${project.id}/edit'`}
-                >
-                  Edit
-                </button>
-                <button
-                  class="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600 focus:outline-none"
-                  onclick={`window.location.href='/projetos/${project.id}/delete'`}
-                >
-                  Delete
-                </button>
+                {researcher.name}
+              </option>
+            ))
+          }
+        </Select>
+        <Select name="status">
+          <option value="">Selecione um status...</option>
+          <option
+            value="Concluído"
+            selected={queryString(q, "status") === "Concluído"}
+          >
+            Concluído
+          </option>
+          <option
+            value="Em andamento"
+            selected={queryString(q, "status") === "Em andamento"}
+          >
+            Em andamento
+          </option>
+        </Select>
+        <button type="submit" class="group block">
+          <Button size="sm" variant="outline">Buscar</Button>
+        </button>
+      </form>
+    </Container>
+    <Container id="results" class="flex flex-col items-center justify-center">
+      <ul class="w-full max-w-2xl">
+        {
+          projects.map((project) => (
+            <li class="relative">
+              <a
+                class="bg-white border border-gray-200 shadow-md rounded-lg block p-6 mb-4 reseacher-item"
+                href={`/projetos/${project.id}`}
+              >
+                <h3 class="text-xl font-semibold">{project.title}</h3>
+                <p class="mb-4 text-m font-semibold text-gray-600">
+                  {formatDate(project.startDate)}
+                  {project.endDate ? ` - ${formatDate(project.endDate)}` : ""}
+                  <span class="mx-2">{"|"}</span>
+                  <span
+                    class={`text-m font-semibold ${getProjectStatus(project.endDate) === "Concluído" ? "text-green-600" : "text-orange-600"}`}
+                  >
+                    {getProjectStatus(project.endDate)}
+                  </span>
+                </p>
+                <p class="text-sm text-gray-500 mr-[200px]">
+                  {project.description}
+                </p>
+              </a>
+              <div class="absolute flex justify-end space-x-2 bottom-4 right-4">
+                <a class="group block" href={`/projetos/${project.id}/editar`}>
+                  <Button variant="outline">Editar</Button>
+                </a>
+                <a class="group block" href={`/projetos/${project.id}/deletar`}>
+                  <Button variant="destructive">Deletar</Button>
+                </a>
               </div>
             </li>
           ))
+        }
+        {
+          projects.length === 0 && (
+            <p class="text-center">Sua busca não retornou resultados!</p>
+          )
         }
       </ul>
     </Container>
   </main>
 </Default>
-<script>
-  const input = document.getElementById("search-input") as HTMLInputElement;
-  const selector = document.getElementById("selector") as HTMLInputElement;
 
-  selector?.addEventListener("change", () => {
-    const selectedValue = selector?.value;
-    const projects = document.querySelectorAll(".project-item");
+<style>
+  form.htmx-request {
+    @apply animate-pulse opacity-75 cursor-progress;
+  }
 
-    projects.forEach((project) => {
-      const status = project.getAttribute("project-status");
-
-      if (status === selectedValue || selectedValue === "") {
-        (project as HTMLElement).style.display = "";
-      } else {
-        (project as HTMLElement).style.display = "none";
-      }
-    });
-  });
-
-  input?.addEventListener("input", () => {
-    const filter = input?.value.toLowerCase();
-    const projects = document.querySelectorAll(".project-item");
-
-    projects.forEach((project) => {
-      const title = project.getAttribute("data-title");
-      if (title?.includes(filter)) {
-        (project as HTMLElement).style.display = "";
-      } else {
-        (project as HTMLElement).style.display = "none";
-      }
-    });
-  });
-</script>
+  form.htmx-request * {
+    @apply pointer-events-none;
+  }
+</style>

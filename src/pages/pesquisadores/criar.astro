@@ -10,20 +10,107 @@ import { db } from "../../db";
 import Default from "../../layouts/Default.astro";
 import { getAreasFlat } from "../../models/area";
 import { getUniversities } from "../../models/university";
+import { createResearcher } from "../../models/researcher";
+import {
+  formString,
+  formFile,
+  formNumber,
+  formNumberList,
+  formDate,
+} from "../../lib/query";
+import { uploadImage } from "../../lib/upload";
+
+const errors: Record<string, string> = {};
+let input: {
+  email?: string;
+  password?: string;
+  password_confirm?: string;
+  name?: string;
+  picture?: File;
+  university?: number;
+  main_area?: number;
+  areas?: number[];
+  dob?: Date;
+  contact_info?: string;
+} = {};
+
+switch (Astro.request.method) {
+  case "POST":
+    const f = await Astro.request.formData();
+    input = {
+      email: formString(f, "email"),
+      password: formString(f, "password"),
+      password_confirm: formString(f, "password_confirm"),
+      name: formString(f, "name"),
+      picture: formFile(f, "picture"),
+      university: formNumber(f, "university"),
+      main_area: formNumber(f, "main_area"),
+      areas: formNumberList(f, "areas[]"),
+      dob: formDate(f, "dob"),
+      contact_info: formString(f, "contact_info"),
+    };
+
+    if (
+      !input.email ||
+      !input.password ||
+      !input.password_confirm ||
+      !input.name ||
+      !input.university ||
+      !input.main_area ||
+      !input.dob
+    ) {
+      errors.generic = "Preencha todos os campos obrigatórios.";
+      break;
+    }
+
+    if (input.password !== input.password_confirm) {
+      errors.password = "As senhas não coincidem.";
+      break;
+    }
+
+    let pictureUrl = undefined;
+
+    if (input.picture) {
+      if (!["image/jpeg", "image/png"].includes(input.picture.type)) {
+        errors.picture =
+          "Formato de imagem inválido. Apenas JPEG e PNG são aceitos.";
+        break;
+      }
+
+      const filename = await uploadImage("public/uploads", input.picture);
+      pictureUrl = `/uploads/${filename}`;
+    }
+
+    try {
+      const pesquisador = await createResearcher(db, {
+        email: input.email,
+        password: input.password,
+
+        name: input.name,
+        pictureUrl,
+        idAreas: input.areas || [],
+        idMainArea: input.main_area,
+        idUniversity: input.university,
+        dateOfBirth: input.dob,
+        contactInfo: input.contact_info,
+      });
+
+      return Astro.redirect(`/pesquisadores/${pesquisador.id}`, 303);
+    } catch (error) {
+      console.error(error);
+
+      errors.generic =
+        "Erro ao criar pesquisador! Confira os dados e tente novamente.";
+    }
+    break;
+
+  default:
+    break;
+}
 
 const universityEntries = await getUniversities(db);
 const areas = await getAreasFlat(db);
 ---
-
-<style>
-  form.htmx-request {
-    @apply animate-pulse opacity-75 cursor-progress;
-  }
-
-  form.htmx-request * {
-    @apply pointer-events-none;
-  }
-</style>
 
 <Default title="Criar pesquisador">
   <main>
@@ -32,47 +119,60 @@ const areas = await getAreasFlat(db);
       <h2 class="text-2xl font-bold">Criar pesquisador</h2>
       <form
         enctype="multipart/form-data"
+        action=""
+        method="post"
         class="max-w-lg mx-auto space-y-4"
-        hx-target="#form_message"
-        hx-swap="innerHTML"
-        hx-post="/pesquisadores/api"
       >
+        {errors.generic && <p class="text-red-600">{errors.generic}</p>}
         <Labelled name="email" label="Email" required>
-          <Input type="email" name="email" required />
+          <Input type="email" name="email" required value={input.email} />
         </Labelled>
         <Labelled name="password" label="Senha" required>
           <Input type="password" name="password" required />
         </Labelled>
         <Labelled name="password_confirm" label="Confirmar senha" required>
           <Input type="password" name="password_confirm" required />
+          {errors.password && <p class="text-red-600">{errors.password}</p>}
         </Labelled>
         <hr />
         <Labelled name="name" label="Nome" required>
-          <Input type="text" name="name" required />
+          <Input type="text" name="name" required value={input.name} />
         </Labelled>
         <Labelled name="picture" label="Foto de perfil">
           <Input type="file" name="picture" accept="image/jpeg,image/png" />
+          {errors.picture && <p class="text-red-600">{errors.picture}</p>}
         </Labelled>
         <Labelled name="university" label="Universidade" required>
           <Select name="university" required>
             <option value="">Selecione a universidade</option>
             {
               universityEntries.map((university) => (
-                <option value={university.id}>{university.name}</option>
+                <option
+                  value={university.id}
+                  selected={input.university === university.id}
+                >
+                  {university.name}
+                </option>
               ))
             }
           </Select>
         </Labelled>
         <Labelled name="main_area" label="Área de pesquisa principal" required>
-          <Select name="main_area" required>
+          <Select name="main_area">
             <option value="">Selecione a área principal</option>
-            {areas.map((area) => <option value={area.id}>{area.name}</option>)}
+            {
+              areas.map((area) => (
+                <option value={area.id} selected={input.main_area === area.id}>
+                  {area.name}
+                </option>
+              ))
+            }
           </Select>
         </Labelled>
         <Labelled name="areas[]" label="Áreas de Pesquisa">
           <template id="area_template">
             <div class="flex gap-2 group/control">
-              <Select name="areas[]" required>
+              <Select name="areas[]">
                 <option value="">Selecione uma área</option>
                 {
                   areas.map((area) => (
@@ -89,7 +189,34 @@ const areas = await getAreasFlat(db);
               </button>
             </div>
           </template>
-          <div id="area_list" class="space-y-2"></div>
+          <div id="area_list" class="space-y-2">
+            {
+              input.areas?.map((areaId) => (
+                <div class="flex gap-2 group/control">
+                  <Select name="areas[]">
+                    <option value="">Selecione uma área</option>
+                    {areas.map((innerArea) => (
+                      <option
+                        value={innerArea.id}
+                        selected={innerArea.id === areaId}
+                      >
+                        {innerArea.name}
+                      </option>
+                    ))}
+                  </Select>
+                  <button
+                    class="group"
+                    type="button"
+                    onclick="this.closest('div').remove();"
+                  >
+                    <Button variant="destructive" size="sm">
+                      -
+                    </Button>
+                  </button>
+                </div>
+              ))
+            }
+          </div>
           <button
             class="group mt-2 w-full"
             type="button"
@@ -103,15 +230,19 @@ const areas = await getAreasFlat(db);
           </button>
         </Labelled>
         <Labelled name="dob" label="Data de Nascimento" required>
-          <Input type="date" name="dob" required />
+          <Input
+            type="date"
+            name="dob"
+            required
+            value={input.dob?.toISOString().split("T")[0]}
+          />
         </Labelled>
         <Labelled name="contact_info" label="Informações de contato">
-          <Textarea rows="8" name="contact_info" />
+          <Textarea rows="8" name="contact_info" value={input.contact_info} />
         </Labelled>
 
         <button type="submit" class="group"><Button>Enviar</Button></button>
       </form>
-      <div id="form_message"></div>
     </Container>
   </main>
 </Default>

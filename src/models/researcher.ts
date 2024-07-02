@@ -28,7 +28,7 @@ export async function createResearcher(
     idAreas: number[];
     idMainArea: number;
     dateOfBirth: Date;
-    contactInfo: string;
+    contactInfo?: string;
     pictureUrl?: string;
   }
 ) {
@@ -200,4 +200,81 @@ export async function getResearcher(
   researcher.collaboratedWith = collaboratedWith;
 
   return researcher;
+}
+
+export async function updateResearcher(
+  db: BetterSQLite3Database<typeof schema>,
+  id: number,
+  {
+    email,
+    password,
+    name,
+    idUniversity,
+    idAreas,
+    idMainArea,
+    dateOfBirth,
+    contactInfo,
+    pictureUrl,
+  }: {
+    email?: string;
+    password?: string;
+    name?: string;
+    idUniversity?: number;
+    idAreas?: number[];
+    idMainArea?: number;
+    dateOfBirth?: Date;
+    contactInfo?: string;
+    pictureUrl?: string;
+  }
+) {
+  const researcher = (
+    await db
+      .update(researchers)
+      .set({
+        email,
+        name,
+        passwordHash: password ? await bcrypt.hash(password, 10) : undefined,
+        contactInfo,
+        dateOfBirth: dateOfBirth
+          ? dateOfBirth.getFullYear() +
+            "-" +
+            (dateOfBirth.getMonth() + 1) +
+            "-" +
+            dateOfBirth.getDate()
+          : undefined,
+        mainAreaId: idMainArea,
+        universityId: idUniversity,
+        picture: pictureUrl,
+      })
+      .where(eq(researchers.id, id))
+      .returning()
+  )[0];
+
+  await db
+    .delete(researchersToAreas)
+    .where(eq(researchersToAreas.researcherId, id));
+
+  idAreas &&
+    idAreas.length > 0 &&
+    (await db.insert(researchersToAreas).values(
+      idAreas.map((idArea) => ({
+        researcherId: researcher.id,
+        areaId: idArea,
+      }))
+    ));
+
+  return researcher;
+}
+
+export async function deleteResearcher(
+  db: BetterSQLite3Database<typeof schema>,
+  id: number
+) {
+  await db
+    .delete(researchersToAreas)
+    .where(eq(researchersToAreas.researcherId, id));
+  await db
+    .delete(researchersToProjects)
+    .where(eq(researchersToProjects.researcherId, id));
+  await db.delete(researchers).where(eq(researchers.id, id));
 }

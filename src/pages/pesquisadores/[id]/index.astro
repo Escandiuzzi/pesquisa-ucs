@@ -3,93 +3,111 @@ import Container from "../../../components/Container.astro";
 import Default from "../../../layouts/Default.astro";
 import { db } from "../../../db";
 import { getResearcher } from "../../../models/researcher";
-import { formatDate } from "../../../lib/dateFormater";
+import { formatDate } from "../../../lib/dateFormatter";
 import Link from "../../../components/Link.astro";
+import Button from "../../../components/Button.astro";
 
 const { id } = Astro.params;
 
 const researcher = await getResearcher(db, parseInt(id as string));
 
-!researcher && (Astro.response.status = 404);
+if (!researcher) {
+  Astro.response.status = 404;
+  return;
+}
 ---
 
-<Default title={researcher ? researcher.name : "Pesquisador"}>
+<Default title={researcher.name}>
   <main>
     <Container class="py-6">
       <Link href="/pesquisadores" class="text-blue-600">&lt; Voltar</Link>
-      <h2 class="text-2xl font-bold mb-4">Pesquisador</h2>
-      {
-        researcher && (
-          <>
-            <div class="bg-white shadow-md border border-gray-200 rounded-lg p-6 mb-4">
-              <div class="flex items-center gap-4 mb-2">
-                <img
-                  src={researcher.picture || "/pfp.png"}
-                  alt={`Foto de perfil de ${researcher.name}`}
-                  class="w-12 h-12 rounded-full object-cover shadow"
-                />
-                <h3 class="text-xl font-semibold mb-2">{researcher.name}</h3>
-              </div>
-              <div class="text-sm text-gray-600 mb-2">
-                <strong>Email:</strong>
-                {researcher.email}
-              </div>
-              <div class="text-sm text-gray-600 mb-2">
-                <strong>Data de aniversário:</strong>
-                {researcher.dateOfBirth
-                  ? formatDate(researcher.dateOfBirth)
-                  : "Não informado"}
-              </div>
-              <div class="text-sm text-gray-600 mb-2">
-                <strong>Telefone:</strong>
-                {researcher.contactInfo}
-              </div>
-              <div class="text-sm text-gray-600 mb-2">
-                <strong>Área:</strong>
-                {researcher.mainArea?.name}
-              </div>
-              <div class="text-sm text-gray-600 mb-2">
-                <strong>Universidade:</strong>
-                {researcher.university?.name}
-              </div>
-              <h3 class="text-xl font-semibold mt-6 mb-2">Áreas</h3>
-              {researcher.areas && researcher.areas.length > 0 ? (
-                researcher.areas.map((data) => (
-                  <p class="text-sm text-gray-600 mb-2">{data.area.name}</p>
-                ))
-              ) : (
-                <p>Nenhum!</p>
-              )}
-              <h3 class="text-xl font-semibold mt-6 mb-2">Projetos</h3>
-              {researcher.projects.length > 0 ? (
-                researcher.projects.map((data) => (
-                  <Link
-                    class="text-sm text-gray-600 mb-2 font-bold block"
-                    href={`/projetos/${data.id}`}
-                  >
-                    {data.title}
-                  </Link>
-                ))
-              ) : (
-                <p>Nenhum!</p>
-              )}
-              <h3 class="text-xl font-semibold mt-6 mb-2">Colaborou com</h3>
-              {researcher.collaboratedWith.length > 0 ? (
-                researcher.collaboratedWith.map((data) => (
-                  <Link
-                    class="text-sm text-gray-600 mb-2 font-bold block"
-                    href={`/pesquisadores/${data.researcher?.id}`}
-                  >
-                    {data.researcher?.name}
-                  </Link>
-                ))
-              ) : (
-                <p>Ninguém!</p>
-              )}
-            </div>
-          </>
-        )
-      }
+      <div class="flex justify-between">
+        <h2 class="text-2xl font-bold mb-4">Pesquisador</h2>
+        <div class="flex space-x-2">
+          <a class="group block" href={`/pesquisadores/${id}/editar`}>
+            <Button variant="outline" size="sm">Editar</Button>
+          </a>
+          <a class="group block" href={`/pesquisadores/${id}/deletar`}>
+            <Button variant="destructive" size="sm">Deletar</Button>
+          </a>
+        </div>
+      </div>
+      <div
+        class="bg-white shadow-md border border-gray-200 rounded-lg p-6 mb-4"
+      >
+        <div class="flex items-center gap-4 mb-2">
+          <img
+            src={researcher.picture || "/pfp.png"}
+            alt={`Foto de perfil de ${researcher.name}`}
+            class="w-12 h-12 rounded-full object-cover shadow"
+          />
+          <h3 class="text-xl font-semibold mb-2">{researcher.name}</h3>
+        </div>
+        <div class="text-sm text-gray-600 mb-2">
+          <strong>Email:</strong>
+          {researcher.email}
+        </div>
+        <div class="text-sm text-gray-600 mb-2">
+          <strong>Data de nascimento:</strong>
+          {
+            researcher.dateOfBirth
+              ? formatDate(researcher.dateOfBirth)
+              : "Não informado"
+          }
+        </div>
+        <div class="text-sm text-gray-600 mb-2">
+          <strong>Telefone:</strong>
+          {researcher.contactInfo}
+        </div>
+        <div class="text-sm text-gray-600 mb-2">
+          <strong>Área:</strong>
+          {researcher.mainArea?.name}
+        </div>
+        <div class="text-sm text-gray-600 mb-2">
+          <strong>Universidade:</strong>
+          {researcher.university?.name}
+        </div>
+        <h3 class="text-xl font-semibold mt-6 mb-2">Áreas</h3>
+        {
+          researcher.areas && researcher.areas.length > 0 ? (
+            researcher.areas.map((data) => (
+              <p class="text-sm text-gray-600 mb-2">{data.area.name}</p>
+            ))
+          ) : (
+            <p>Nenhum!</p>
+          )
+        }
+        <h3 class="text-xl font-semibold mt-6 mb-2">Projetos</h3>
+        {
+          researcher.projects.length > 0 ? (
+            researcher.projects.map((data) => (
+              <Link
+                class="text-sm text-gray-600 mb-2 font-bold block"
+                href={`/projetos/${data.id}`}
+              >
+                {data.title}
+              </Link>
+            ))
+          ) : (
+            <p>Nenhum!</p>
+          )
+        }
+        <h3 class="text-xl font-semibold mt-6 mb-2">Colaborou com</h3>
+        {
+          researcher.collaboratedWith.length > 0 ? (
+            researcher.collaboratedWith.map((data) => (
+              <Link
+                class="text-sm text-gray-600 mb-2 font-bold block"
+                href={`/pesquisadores/${data.researcher?.id}`}
+              >
+                {data.researcher?.name}
+              </Link>
+            ))
+          ) : (
+            <p>Ninguém!</p>
+          )
+        }
+      </div>
     </Container>
   </main>
 </Default>
