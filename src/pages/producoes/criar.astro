@@ -45,7 +45,7 @@ switch (Astro.request.method) {
   case "POST":
     const f = await Astro.request.formData();
     input = {
-      creator: formNumber(f, "creator"),
+      creator: user.id,
       title: formString(f, "title"),
       pub_date: formDate(f, "pub_date"),
       type: formString(f, "type") as ProductionType,
@@ -110,22 +110,6 @@ const areas = await getAreasFlat(db);
         class="max-w-lg mx-auto space-y-4"
       >
         {errors.generic && <p class="text-red-600">{errors.generic}</p>}
-        <Labelled name="creator" label="Criador" required>
-          <Select name="creator" required>
-            <option value="">Selecione um pesquisador</option>
-            {
-              researchers.map((researcher) => (
-                <option
-                  value={researcher.id}
-                  selected={input.creator === researcher.id}
-                >
-                  {researcher.name}
-                </option>
-              ))
-            }
-          </Select>
-        </Labelled>
-        <hr />
         <Labelled name="project" label="Projeto" required>
           <Select name="project" required>
             <option value=""
