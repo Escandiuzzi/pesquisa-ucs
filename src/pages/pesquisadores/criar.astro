@@ -108,7 +108,7 @@ switch (Astro.request.method) {
         contactInfo: input.contact_info,
       });
 
-      return Astro.redirect(`/pesquisadores/${pesquisador.id}`, 303);
+      return Astro.redirect(`/login`, 303);
     } catch (error) {
       console.error(error);
 
