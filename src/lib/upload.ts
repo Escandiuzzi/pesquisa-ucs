@@ -6,7 +6,7 @@ export async function uploadImage(folder: string, image: File) {
   if (!existsSync(folder)) {
     await mkdir(folder, { recursive: true });
   }
-  const filename = nanoid();
+  const filename = nanoid() + "_" + image.name;
   const imagePath = `${folder}/${filename}`;
   await writeFile(imagePath, Buffer.from(await image.arrayBuffer()));
   return filename;
